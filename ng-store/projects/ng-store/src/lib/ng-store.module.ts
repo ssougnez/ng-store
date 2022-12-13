@@ -1,16 +1,20 @@
+import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
-import { NgStoreComponent } from './ng-store.component';
-
-
+import { NgStoreContainerComponent } from './components/container/container.component';
+import { NgStoreErrorHostComponent } from './components/error-host/error-host.component';
+import { NgStoreLoaderHostComponent } from './components/loader-host/loader-host.component';
 
 @NgModule({
   declarations: [
-    NgStoreComponent
+    NgStoreContainerComponent,
+    NgStoreLoaderHostComponent,
+    NgStoreErrorHostComponent
   ],
   imports: [
+    CommonModule
   ],
   exports: [
-    NgStoreComponent
+    NgStoreContainerComponent
   ]
 })
 export class NgStoreModule { }

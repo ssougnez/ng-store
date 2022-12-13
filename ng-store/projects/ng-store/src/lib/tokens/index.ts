@@ -1,0 +1,1 @@
+export * from './ng-store-config.token';
