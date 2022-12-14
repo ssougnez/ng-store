@@ -157,7 +157,7 @@
         entity:
     </p>
 
-    <pre><code>import {{ '{' }} BaseEntity } from "ng-store";
+    <pre><code>import {{ '{' }} BaseEntity } from "@ssougnez/ng-store";
 
 export type Pokemon = BaseEntity&lt;number> & {{ '{' }}
     name: string;
@@ -173,7 +173,7 @@ export type Pokemon = BaseEntity&lt;number> & {{ '{' }}
     <p>Now that we have an entity, we need to create our state and its initial value. Usually, you'll want to create a
         "state" directly with a file in it called "app.state.ts". Put the following content inside:</p>
 
-    <pre><code>import {{ '{' }} createEntities, Entities } from "ng-store";
+    <pre><code>import {{ '{' }} createEntities, Entities } from "@ssougnez/ng-store";
 import {{ '{' }} Pokemon } from "../models/pokemon.model";
 
 export type AppState = {{ '{' }}
