@@ -1,0 +1,29 @@
+<ng-template #contentTpl>
+  <ng-template #dataTpl>
+    <ng-container *ngTemplateOutlet="template; context: { $implicit: (data$ | async) }"></ng-container>
+  </ng-template>
+  <ng-container *ngIf="(loaded$ | async) !== true; else dataTpl">
+    <div class="loader"
+         *ngIf="loaderType === 'component'">
+      <ngs-loader-host [size]="loaderSize"></ngs-loader-host>
+    </div>
+    <ng-container *ngIf="loaderType === 'text'">{{ loaderText }}</ng-container>
+    <ng-container *ngIf="loaderType === 'template'">
+      <ng-container *ngTemplateOutlet="loaderTemplate"></ng-container>
+    </ng-container>
+  </ng-container>
+</ng-template>
+
+<ng-template #errorTpl
+             let-error>
+  <pre *ngIf="!config.errorComponent && errorTemplate === null">{{ error | json }}</pre>
+  <ngs-error-host [error]="error"
+                  *ngIf="config.errorComponent && errorTemplate === null"></ngs-error-host>
+  <ng-container *ngIf="errorTemplate !== null">
+    <ng-container *ngTemplateOutlet="errorTemplate; context: { $implicit: error }"></ng-container>
+  </ng-container>
+</ng-template>
+
+<ng-container *ngIf="query$ && loaded$ && data$">
+  <ng-container *ngIf="query$ | async; then errorTpl; else contentTpl"></ng-container>
+</ng-container>
