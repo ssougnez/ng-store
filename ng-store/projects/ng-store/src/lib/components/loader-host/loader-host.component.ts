@@ -4,7 +4,7 @@ import { NG_STORE_CONFIG } from '../../tokens';
 
 @Component({
   selector: 'ngs-loader-host',
-  template: '<ng-container #host></ng-container>',
+  template: '<ng-container #host></ng-container><div *ngIf="!!config.loaderComponent">...</div>',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NgStoreLoaderHostComponent implements OnInit {
@@ -19,12 +19,16 @@ export class NgStoreLoaderHostComponent implements OnInit {
 
   /****************************************************************** LIFE CYCLE ******************************************************************/
 
-  constructor(@Inject(NG_STORE_CONFIG) private _config: StoreConfiguration) { }
+  constructor(@Inject(NG_STORE_CONFIG) public config: StoreConfiguration) { }
 
   public ngOnInit(): void {
-    const component = this.host.createComponent(this._config.loaderComponent);
+    this.host.clear();
 
-    component.instance.size = this.size;
+    if (this.config.loaderComponent) {
+      const component = this.host.createComponent(this.config.loaderComponent);
+
+      component.instance.size = this.size;
+    }
   }
 
 }

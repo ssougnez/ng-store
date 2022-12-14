@@ -4,7 +4,7 @@ import { NG_STORE_CONFIG } from '../../tokens';
 
 @Component({
   selector: 'ngs-error-host',
-  template: '<ng-container #host></ng-container>',
+  template: '<ng-container #host></ng-container><div *ngIf="!!config?.errorComponent" [innerHTML]="error"></div>',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NgStoreErrorHostComponent implements OnInit {
@@ -19,13 +19,13 @@ export class NgStoreErrorHostComponent implements OnInit {
 
   /****************************************************************** LIFE CYCLE ******************************************************************/
 
-  constructor(@Inject(NG_STORE_CONFIG) private _config: StoreConfiguration) { }
+  constructor(@Inject(NG_STORE_CONFIG) public config: StoreConfiguration) { }
 
   public ngOnInit(): void {
     this.host.clear();
 
-    if (this._config.errorComponent) {
-      const component = this.host.createComponent(this._config.errorComponent);
+    if (this.config.errorComponent) {
+      const component = this.host.createComponent(this.config.errorComponent);
 
       component.instance.error = this.error;
     }

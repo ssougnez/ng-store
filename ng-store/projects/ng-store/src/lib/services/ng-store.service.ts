@@ -1,6 +1,7 @@
+import { HttpClient } from '@angular/common/http';
 import { Inject, inject, Injectable } from '@angular/core';
 import { enableMapSet, produce } from 'immer';
-import { BehaviorSubject, catchError, distinctUntilChanged, filter, finalize, map, Observable, of, share, take, tap, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, distinctUntilChanged, finalize, map, Observable, of, share, tap, throwError } from 'rxjs';
 import { StoreConfiguration } from '../models';
 import { filterArray, mapArray } from '../operators';
 import { NG_STORE_CONFIG } from '../tokens';
@@ -159,11 +160,11 @@ export class NgStore<TStore>  {
 
   /****************************************************************** LIFE CYCLE ******************************************************************/
 
-  constructor(@Inject(NG_STORE_CONFIG) config: StoreConfiguration) {
+  constructor(@Inject(NG_STORE_CONFIG) private _config: StoreConfiguration) {
     enableMapSet();
 
-    this._http = inject(config.httpClientType);
-    this._store = new BehaviorSubject(config.initialValue as TStore);
+    this._http = inject(_config.httpClientType ?? HttpClient);
+    this._store = new BehaviorSubject(_config.initialValue as TStore);
     this._root = this._store.asObservable();
   }
 
@@ -417,6 +418,13 @@ export class NgStore<TStore>  {
         }
       });
     }
+  }
+
+  /** 
+   * Reset the store to its initial value
+  */
+  public reset(): void {
+    this._store.next(this._config.initialValue as TStore);
   }
 
   /**

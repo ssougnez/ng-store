@@ -4,9 +4,10 @@ import { IBaseErrorComponent } from "./base-error-component.interface";
 import { IBaseLoaderComponent } from "./base-loader-component.interface";
 
 export type StoreConfiguration = {
-  httpClientType: ProviderToken<IHttpClient>;
   initialValue: unknown;
-  loaderComponent: Type<IBaseLoaderComponent>;
+
+  httpClientType?: ProviderToken<IHttpClient>;
+  loaderComponent?: Type<IBaseLoaderComponent>;
   initialLoaderSize?: string;
   errorComponent?: Type<IBaseErrorComponent>;
   defaultLoaderText?: () => string;
