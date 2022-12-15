@@ -1157,7 +1157,7 @@ export class NgStore<TStore>  {
       const state = entity ? entity.loaded : false;
 
       this.update(d => {
-        this._setEntitiesStates(d, root, entity === null, null, entity !== null, null);
+        this._setEntitiesStates(d, root, entity === null ? true : null, null, entity !== null ? true : null, null);
         this._setEntityStates(d, root, key, null, null, true, null);
       })
       return this._http

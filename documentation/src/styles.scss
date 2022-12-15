@@ -1,3 +1,15 @@
+:root {
+    --primary-ultra-light: #B8F2E3;
+    --primary-super-light: #82DFC8;
+    --primary-lighter: #57C9AC;
+    --primary-light: #31B695;
+    --primary: #10ac84;
+    --primary-dark: #008E6A;
+    --primary-darker: #007054;
+    --primary-super-dark: #005943;
+    --primary-ultra-dark: #003D2E;
+}
+
 *,
 *:after,
 *::before {
@@ -15,7 +27,17 @@ html {
     font-size: 16px;
 }
 
+a {
+    color: var(--primary);
+    text-decoration: none;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
 main {
-    max-width: 1024px;
+    max-width: 968px;
     margin: auto;
+    padding: 2rem;
 }

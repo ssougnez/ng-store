@@ -1,27 +1,45 @@
 <main>
-    <h1>Context</h1>
+
+    <div class="logo">
+
+        <div class="title">
+            <span>ng-st</span>
+            <img src="/assets/img/logo.svg"
+                 alt="Logo" />
+            <span>re</span>
+        </div>
+    </div>
+
+    <h1>Table of content</h1>
+
+    <ul>
+        <li><a href="#context">Context</a></li>
+        <li><a href="#introduction">Introduction</a></li>
+        <li><a href="#installation">Installation</a></li>
+        <li><a href="#principle">Principle</a></li>
+        <li><a href="#configuration">Configuration</a></li>
+        <li><a href="#getting-started">Getting started</a></li>
+    </ul>
+
+    <h1 id="context">Context</h1>
 
     <p>Managing data in an Angular application can be quite tricky and impact the way you develop your application.
         "ng-store" is a solution to manage data using a store similar to a relational database.</p>
 
-    <h1>Introduction</h1>
+    <h1 id="introduction">Introduction</h1>
 
-    <p>When learning Angular, you'll be confronted to a lot of new concepts and challenges that you'll have to take.
-        There
-        are so many of those that beginners tend to neglect one of the most important: data management.</p>
+    <p>When learning Angular, you'll be confronted to a lot of concepts and challenges that you'll have to take.
+        There are so many of those that beginners tend to neglect one of the most important: data management.</p>
 
-    <p>At first, it's tempting to rush into component development to make huge and complex component to power your
+    <p>At first, it's tempting to rush into components development to make huge and complex components to power your
         application. After all, at first, it seems easier to have everything in a huge component. However, after a
-        while, it
-        appears that it is not a good solution and that it brings more problem that it solves.</p>
+        while, it appears that it is not a good solution and that it brings more problem that it solves.</p>
 
     <p>At some point, in the Angular learning journey, one will be confronted to the challenge of managing data in the
-        best
-        way possible. At first, it's most likely that one will store data inside a component. Basically, after having
-        read
-        some tutorial, one will inject the `HttpClient` service into the component and call the `get` method to fetch
-        data
-        before displaying them on the screen.</p>
+        best way possible. At first, it's most likely that one will store data inside a component. Basically, after
+        having read some tutorials, one will inject the <code class="language-typescript">HttpClient</code> service into
+        the component and call the <code class="language-typescript">get</code> method to fetch data before displaying
+        them on the screen.</p>
 
     <p>It obviously works pretty well, however, there are some attention points to this:</p>
 
@@ -91,13 +109,13 @@
         :-)
     </p>
 
-    <h1>Installation</h1>
+    <h1 id="installation">Installation</h1>
 
     <p>Simply run:</p>
 
     <code>yarn add immer @ssougnez/ng-store</code>
 
-    <h1>Principle</h1>
+    <h1 id="principle">Principle</h1>
 
     <p>You can use "ng-store" the way you want, however, you'll find in this section some advices to use it in an
         optimal
@@ -108,7 +126,7 @@
         "flat
         object":</p>
 
-    <pre><code>{{ '{' }}
+    <pre><code class="language-typescript">{{ '{' }}
     firstName: "Nicolas",
     lastName: "Cage",
     age: 50,
@@ -117,13 +135,12 @@
         lastName: "Kidman",
         age: 56
     }
-}
-</code></pre>
+}</code></pre>
 
     <p>The issue with this kind of objet is that it is an open door to data redundancy. A better version of this object
         would be its flat one:</p>
 
-    <pre><code>{{ '{' }}
+    <pre><code class="language-typescript">{{ '{' }}
     firstName: "Nicolas",
     lastName: "Cage",
     age: 50,
@@ -146,7 +163,7 @@
         rest
         of this documentation.</p>
 
-    <h1>Configuration</h1>
+    <h1 id="configuration">Configuration</h1>
 
     <p>The current version of "ng-store" does not support yet standalone component. You can use "ng-store" in standalone
         component but you have to import the whole module to be able to work with it, so the rest of this documentation
@@ -157,7 +174,7 @@
         entity:
     </p>
 
-    <pre><code>import {{ '{' }} BaseEntity } from "@ssougnez/ng-store";
+    <pre><code class="language-typescript">import {{ '{' }} BaseEntity } from "@ssougnez/ng-store";
 
 export type Pokemon = BaseEntity&lt;number> & {{ '{' }}
     name: string;
@@ -173,7 +190,7 @@ export type Pokemon = BaseEntity&lt;number> & {{ '{' }}
     <p>Now that we have an entity, we need to create our state and its initial value. Usually, you'll want to create a
         "state" directly with a file in it called "app.state.ts". Put the following content inside:</p>
 
-    <pre><code>import {{ '{' }} createEntities, Entities } from "@ssougnez/ng-store";
+    <pre><code class="language-typescript">import {{ '{' }} createEntities, Entities } from "@ssougnez/ng-store";
 import {{ '{' }} Pokemon } from "../models/pokemon.model";
 
 export type AppState = {{ '{' }}
@@ -193,7 +210,7 @@ export const initial: AppState = {{ '{' }}
         some
         default data in your store using the first parameter of this function:</p>
 
-    <pre><code>export const initial: AppState = {{ '{' }}
+    <pre><code class="language-typescript">export const initial: AppState = {{ '{' }}
     pokemons: createEntities&lt;Pokemon>([
         {{ '{' }}
             id: 1,
@@ -206,7 +223,7 @@ export const initial: AppState = {{ '{' }}
 
     <p>The last thing to do to be able to use the store is to import it in your module and configure it:</p>
 
-    <pre><code>@NgModule({{ '{' }}
+    <pre><code class="language-typescript">@NgModule({{ '{' }}
     ...
     imports: [
       NgStoreModule
@@ -227,13 +244,12 @@ export const initial: AppState = {{ '{' }}
     <p>Congratulation, you are now ready to use the store. Note that someday, I might take the time to use schematics to
         leverage this :-)</p>
 
-    <h1>First steps</h1>
+    <h1 id="getting-started">Getting started</h1>
 
-    <p>Now that the store is configure, we'll see how to fetch, add, update and remove data from it. Let's imagine this
-        very
-        simple component:</p>
+    <p>Now that the store is configured, we'll see how to select, add, update and remove data from it. Let's imagine
+        this very simple component:</p>
 
-    <pre><code>&lt;pre>{{ '{' + '{' }} pokemons$ | async | json }}&lt;/pre>
+    <pre><code class="language-typescript">&lt;pre>{{ '{' + '{' }} pokemons$ | async | json }}&lt;/pre>
 
 &lt;button (click)="add()">Add&lt;/button>
 &lt;button (click)="update()">Edit&lt;/button>
@@ -245,7 +261,7 @@ export const initial: AppState = {{ '{' }}
 
     <p>Let's start with the code used to retrieves pokemons from the store:</p>
 
-    <pre><code>export class AppComponent {{ '{' }}
+    <pre><code class="language-typescript">export class AppComponent {{ '{' }}
 
     public store: NgStore&lt;AppState> = inject(NgStore);
   
@@ -261,7 +277,7 @@ export const initial: AppState = {{ '{' }}
 
     <p>Now the code to add data in the store:</p>
 
-    <pre><code>public add() {{ '{' }}
+    <pre><code class="language-typescript">public add() {{ '{' }}
     this.store.upsertValue&lt;Pokemon>(s => s.pokemons, {{ '{' }} id: 1, name: 'Pikachu', type: 'electric' });
 }</code></pre>
 
@@ -270,7 +286,7 @@ export const initial: AppState = {{ '{' }}
         way,
         which is what we do in the "update" function:</p>
 
-    <pre><code>public update() {{ '{' }}
+    <pre><code class="language-typescript">public update() {{ '{' }}
     this.store.updateValueByKey&lt;Pokemon>(s => s.pokemons, 1, p => p.name = 'Dracofeu');
 }</code></pre>
 
@@ -292,7 +308,7 @@ export const initial: AppState = {{ '{' }}
 
     <p>Finally, the "remove" function:</p>
 
-    <pre><code>public remove() {{ '{' }}
+    <pre><code class="language-typescript">public remove() {{ '{' }}
     this.store.removeEntitiesByKeys&lt;Pokemon>(s => s.pokemons, 1);
 }</code></pre>
 </main>

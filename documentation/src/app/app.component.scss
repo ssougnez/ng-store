@@ -1,0 +1,31 @@
+.logo {
+    margin-bottom: 3rem;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: .25rem;
+
+    .title {
+        font-family: "Secular One", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 5rem;
+
+        img {
+            width: 5rem;
+            height: 5rem;
+            margin-bottom: -.75rem;
+        }
+    }
+}
+
+@media(max-width: 500px) {
+    .logo {
+        .title {
+            font-size: 3rem;
+
+            img {
+                width: 3rem;
+                height: 3rem;
+            }
+        }
+    }
+}

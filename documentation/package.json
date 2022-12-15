@@ -21,6 +21,7 @@
     "@angular/router": "^15.0.0",
     "@ssougnez/ng-store": "^0.0.1",
     "immer": "^9.0.16",
+    "prismjs": "^1.29.0",
     "rxjs": "~7.5.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.12.0"
@@ -30,6 +31,7 @@
     "@angular/cli": "~15.0.3",
     "@angular/compiler-cli": "^15.0.0",
     "@types/jasmine": "~4.3.0",
+    "@types/prismjs": "^1.26.0",
     "jasmine-core": "~4.5.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.1.0",
