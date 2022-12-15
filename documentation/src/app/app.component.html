@@ -4,7 +4,7 @@
 
         <div class="title">
             <span>ng-st</span>
-            <img src="/assets/img/logo.svg"
+            <img src="assets/img/logo.svg"
                  alt="Logo" />
             <span>re</span>
         </div>
@@ -44,27 +44,37 @@
     <p>It obviously works pretty well, however, there are some attention points to this:</p>
 
     <ul>
-        <li>In a perfect world, a component should do one and only one thing. Therefore, fetching data using a HTTP call
-            and
-            displaying the data could be considered as two things => bad practice.</li>
-        <li>Data loaded in the component are only available in this component</li>
-        <li>You might need multiple class variables to store these data depending on the complexity of the component
+        <li>
+            In a perfect world, a component should do one and only one thing. Therefore, fetching data using a HTTP call
+            and displaying them could be considered as two things => bad practice.
         </li>
-        <li>If several components need the same data, they will be loaded multiple times</li>
+        <li>
+            Data loaded in the component are only available in this component.
+        </li>
+        <li>
+            You might need multiple class variables to store these data depending on the complexity of the component.
+        </li>
+        <li>
+            If multiple components need the same data, they will be loaded multiple times.
+        </li>
     </ul>
 
     <p>The next logical step is to start using services to store data. There are avantages to this approach:</p>
 
     <ul>
-        <li>Data are centralized: When data are loaded, they are available to multiple components</li>
-        <li>The heavy lifting is done once by the service. Components needing the data will just have to inject the
-            service
-            and use the data</li>
+        <li>
+            Data are centralized: When data are loaded, they are available to multiple components.
+        </li>
+        <li>
+            The heavy lifting is done once by the service. Components needing the data just have to inject the
+            service and use the data.
+        </li>
     </ul>
 
-    <p>However, it's still, in my opinion not the perfect solution. Indeed, with services maintaining their own data
-        arise
-        some pain point:</p>
+    <p>
+        However, it's still, in my opinion not the perfect solution. Indeed, with services maintaining their own data
+        arise some pain points:
+    </p>
 
     <ul>
         <li>What if the service A needs data from the services B and vice versa. This will create a cyclic dependency
@@ -79,7 +89,7 @@
     <p>I faced all this issues and consideration in my day to day work for a while, which is why I decided to have a
         look at
         store/state management systems out there.</p>
-    <p>To be honest, I only checked one out: <a href="https://ngrx.io/">ngrx</a>. Mostly because it's the most popular
+    <p>To be honest, I only checked one out: <a href="https://ngrx.io/" target="_blank">ngrx</a>. Mostly because it's the most popular
         one.
     </p>
     <p>Before reading the following, please consider that I didn't use it for a long time and I probably onlu scratched
