@@ -6,5 +6,11 @@ export type AppState = {
 }
 
 export const initial: AppState = {
-    pokemons: createEntities<Pokemon>()
+    pokemons: createEntities<Pokemon>([
+        {
+            id: 1,
+            name: 'Pikachu',
+            type: 'electric'
+        }
+    ])
 }

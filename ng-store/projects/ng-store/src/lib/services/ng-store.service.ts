@@ -143,7 +143,7 @@ export class NgStore<TStore>  {
   private _executedQueries: Set<string> = new Set<string>();
   private _executedQueriesSubject: BehaviorSubject<Set<string>> = new BehaviorSubject<Set<string>>(this._executedQueries);
   private _store: BehaviorSubject<TStore>;
-  private _http: IHttpClient;
+  private _http: IHttpClient | null = null;
   private _root: Observable<TStore>;
 
   public readonly executedQueries$: Observable<Set<string>> = this._executedQueriesSubject.asObservable();
@@ -163,7 +163,10 @@ export class NgStore<TStore>  {
   constructor(@Inject(NG_STORE_CONFIG) private _config: StoreConfiguration) {
     enableMapSet();
 
-    this._http = inject(_config.httpClientType ?? HttpClient);
+    if (_config.httpClientType !== null) {
+      this._http = inject(_config.httpClientType ?? HttpClient);
+    }
+
     this._store = new BehaviorSubject(_config.initialValue as TStore);
     this._root = this._store.asObservable();
   }
@@ -784,6 +787,10 @@ export class NgStore<TStore>  {
     root: (s: TStore) => Entities<T>,
     key: T['id']
   ): Observable<TReturn> {
+    if (this._http === null) {
+      throw new Error('You need to define a compatible HttpClient to call this function');
+    }
+
     return this._innerFrom(() => {
       const entity = this.findEntityByKey(root, key);
 
@@ -800,7 +807,7 @@ export class NgStore<TStore>  {
         this._setEntityStates(d, root, key, null, null, null, true);
       })
 
-      return this._http
+      return this._http!
         .delete<TReturn>(url)
         .pipe(
           finalize(() => {
@@ -1129,10 +1136,14 @@ export class NgStore<TStore>  {
     root: (s: TStore) => Entities<T>,
     data: unknown
   ): Observable<TResult> {
+    if (this._http === null) {
+      throw new Error('You need to define a compatible HttpClient to call this function');
+    }
+
     return this._innerFrom(() => {
       this.update(d => this._setEntitiesStates(d, root, true, null, null, null));
 
-      return this._http
+      return this._http!
         .post<TResult>(url, data)
         .pipe(finalize(() => this.update(d => this._setEntitiesStates(d, root, false, null, null, null))));
     });
@@ -1152,6 +1163,10 @@ export class NgStore<TStore>  {
     key: T['id'] | null,
     data: unknown
   ): Observable<TResult> {
+    if (this._http === null) {
+      throw new Error('You need to define a compatible HttpClient to call this function');
+    }
+
     return this._innerFrom(() => {
       const entity = this.findEntityByKey(root, key);
       const state = entity ? entity.loaded : false;
@@ -1160,7 +1175,7 @@ export class NgStore<TStore>  {
         this._setEntitiesStates(d, root, entity === null ? true : null, null, entity !== null ? true : null, null);
         this._setEntityStates(d, root, key, null, null, true, null);
       })
-      return this._http
+      return this._http!
         .put<TResult>(url, data)
         .pipe(
           finalize(() => {
@@ -1338,7 +1353,7 @@ export class NgStore<TStore>  {
     let query = this._executingQueries.get(typeof data == 'string' ? data : data.key);
 
     if (!query) {
-      query = typeof data == 'string' ? this._http.get<T>(data).pipe(share()) : data.observable.pipe(share());
+      query = typeof data == 'string' ? this._http!.get<T>(data).pipe(share()) : data.observable.pipe(share());
 
       this._executingQueries.set(typeof data == 'string' ? data : data.key, query);
     }

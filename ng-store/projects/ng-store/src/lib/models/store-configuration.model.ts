@@ -6,7 +6,7 @@ import { IBaseLoaderComponent } from "./base-loader-component.interface";
 export type StoreConfiguration = {
   initialValue: unknown;
 
-  httpClientType?: ProviderToken<IHttpClient>;
+  httpClientType?: ProviderToken<IHttpClient> | null;
   loaderComponent?: Type<IBaseLoaderComponent>;
   initialLoaderSize?: string;
   errorComponent?: Type<IBaseErrorComponent>;
