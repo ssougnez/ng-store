@@ -1,0 +1,13 @@
+<div *ngFor="let p of pokemons$ | async; trackBy: trackByValue">
+    {{ p.name }}
+</div>
+
+<div>
+    <button (click)="upsertNonExisting()">Upsert non existing</button>
+</div>
+<div>
+    <button (click)="upsertExisting()">Upsert existing</button>
+</div>
+<div>
+    <button (click)="updateExisting()">Update existing</button>
+</div>
