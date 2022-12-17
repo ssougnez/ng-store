@@ -33,29 +33,13 @@ export class AppComponent {
   /************************************************** PUBLIC **************************************************/
 
   /** */
-  public upsertNonExisting(): void {
-    const pokemon: Pokemon = {
-      id: 13,
-      name: 'Vulpix',
-      type: 'fire'
-    };
-
-    this._store.upsertValue<Pokemon>(s => s.pokemons, pokemon);
+  public remove(): void {
+    this._store.removeValuesByKeys<Pokemon>(s => s.pokemons, 1, 2);
   }
 
   /** */
-  public upsertExisting(): void {
-    const pokemon: Pokemon = {
-      id: 1,
-      name: 'Zubat',
-      type: 'poison'
-    };
-
-    this._store.upsertValue<Pokemon>(s => s.pokemons, pokemon);
+  public removeNormal(): void {
+    this._store.removeValuesBy(s => s.pokemons, p => p.type === 'normal');
   }
 
-  /** */
-  public updateExisting(): void {
-    this._store.updateValueByKey(s => s.pokemons, 1, p => p.name = 'Jigglypuff');
-  }
 }

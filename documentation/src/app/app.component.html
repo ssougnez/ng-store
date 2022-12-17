@@ -812,14 +812,43 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
 
     <p class="message information">
         You can find the code of this section in <a
-           href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/05_Upsert"
+           href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/04_Upsert"
            target="_blank">the fourth example</a> of the playground.
     </p>
 
     <h1 id="remove">Remove</h1>
 
     <p>
-        Coming soon...
+        Removing values from the store can be done using these two functions:
+    </p>
+
+    <ul>
+        <li><strong>removeValuesBy</strong>: Removes values based on a predicate.</li>
+        <li><strong>removeValuesByKeys</strong>: Removes values based on their key.</li>
+    </ul>
+
+    <p>
+        For example, to remove the values with key 1 or 2:
+    </p>
+
+    <pre>
+<code class="language-typescript">public updateExisting(): void {{ '{' }}
+    this._store.removeValuesByKeys&lt;Pokemon>(s => s.pokemons, 1, 2);
+}</code></pre>
+
+    <p>
+        Or to remove all normal pokemons:
+    </p>
+
+    <pre>
+<code class="language-typescript">public updateExisting(): void {{ '{' }}
+    this._store.removeValuesBy(s => s.pokemons, p => p.type === 'normal');
+}</code></pre>
+
+    <p class="message information">
+        You can find the code of this section in <a
+           href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/05_Remove"
+           target="_blank">the sixth example</a> of the playground.
     </p>
 
     <h1 id="load">Load</h1>

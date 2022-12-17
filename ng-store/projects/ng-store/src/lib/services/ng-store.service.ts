@@ -387,12 +387,12 @@ export class NgStore<TStore>  {
   }
 
   /**
-   * Remove entities from the store by their keys
+   * Remove values from the store by their keys
    * 
    * @param selector  Selector to return the part of the store where entities are removed from
    * @param keys      Keys used to remove entities
    */
-  public removeEntitiesByKeys<T extends BaseEntity<T['id']>>(
+  public removeValuesByKeys<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
     ...keys: T['id'][]
   ) {

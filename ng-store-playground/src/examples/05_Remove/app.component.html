@@ -1,13 +1,10 @@
 <div *ngFor="let p of pokemons$ | async; trackBy: trackByValue">
-    {{ p.name }}
+    {{ p.name }} ({{ p.type }})
 </div>
 
 <div>
-    <button (click)="upsertNonExisting()">Upsert non existing</button>
+    <button (click)="remove()">Remove with ID 1 and 2</button>
 </div>
 <div>
-    <button (click)="upsertExisting()">Upsert existing</button>
-</div>
-<div>
-    <button (click)="updateExisting()">Update existing</button>
+    <button (click)="removeNormal()">Remove all normal Pokemon</button>
 </div>
