@@ -83,3 +83,11 @@ pre {
         border-color: var(--warning);
     }
 }
+
+.img {
+    text-align: center;
+
+    img {
+        max-width: 95%;
+    }
+}

@@ -1,13 +1,13 @@
 import { bootstrapApplication } from '@angular/platform-browser';
 import { NG_STORE_CONFIG, StoreConfiguration } from 'ng-store';
-import { AppComponent as SimpleExampleComponent } from './examples/01_Simple/app.component';
-import { initial as initialSimpleExample } from './examples/01_Simple/state/app.state';
+import { AppComponent as FindComponent } from './examples/01_Find/app.component';
+import { initial as initialSimpleExample } from './examples/01_Find/state/app.state';
 
-const component = SimpleExampleComponent;
+const component = FindComponent;
 
 const configurations = new Map();
 
-configurations.set(component, [{
+configurations.set(FindComponent, [{
   provide: NG_STORE_CONFIG,
   useValue: {
     initialValue: initialSimpleExample,

@@ -21,7 +21,7 @@
         <li><a href="#models">Models</a></li>
         <li><a href="#state">State</a></li>
         <li><a href="#configuration">Configuration</a></li>
-        <li><a href="#getting-started">Getting started</a></li>
+        <li><a href="#find">Find functions</a></li>
     </ul>
 
     <h1 id="context">Context</h1>
@@ -230,8 +230,30 @@
 
 export type Pokemon = BaseEntity&lt;number> & {{ '{' }}
     name: string;
-    type: 'water' | 'fire' | 'electric';
+    type: 'water' | 'fire' | 'electric' | 'grass' | 'bug' | 'normal' | 'poison';
 }</code></pre>
+
+    <p>
+        It's important to highlight the fact that these entities are not stored as such in the store. In the example
+        above, a value of type "Pokemon" will be stored as an <code
+              class="language-typescript">Entity&lt;Pokemon></code> object. This type
+        allows ng-store to store and find values in an efficient way. For now, the most important thing to remember is
+        that an object of type <code class="language-typescript">Entity&lt;T></code> contains a <code
+              class="language-typescript">value</code> property that holds the actual <code
+              class="language-typescript">Pokemon</code> object. The type <code
+              class="language-typescript">Entity&lt;T></code> also contains other properties that we'll review later in
+        this document.
+    </p>
+
+    <p>
+        For the rest of this article, we'll use the following terms:
+    </p>
+
+    <ul>
+        <li><strong>value</strong>: A value is the object you want to store, in this case, a "Pokemon" object.</li>
+        <li><strong>entity</strong>: An entity is a value wrapped in a <code
+                  class="language-typescript">Entity&lt;T></code> object.</li>
+    </ul>
 
     <h1 id="state">State</h1>
 
@@ -301,77 +323,188 @@ export type AppState = {{ '{' }}
         The configuration object accepts other properties but we'll cover them later in this documentation.
     </p>
 
+    <h1 id="select-find">Find functions</h1>
 
-    <h1 id="select-find">Select and find value(s)</h1>
-
-    <!--
-    <p>Now that the store is configured, we'll see how to select, add, update and remove data from it. Let's imagine
-        this very simple component:</p>
-
-    <pre><code class="language-typescript">&lt;pre>{{ '{' + '{' }} pokemons$ | async | json }}&lt;/pre>
-
-&lt;button (click)="add()">Add&lt;/button>
-&lt;button (click)="update()">Edit&lt;/button>
-&lt;button (click)="remove()">Reset&lt;/button></code></pre>
-
-    <p>So basically, we just display the values emitted by the "pokemons$" observable above 3 buttons used to
-        respectively
-        add, update and remove data from the store.</p>
-
-    <p>Let's start with the code used to retrieves pokemons from the store:</p>
-
-    <pre><code class="language-typescript">export class AppComponent {{ '{' }}
-
-    public store: NgStore&lt;AppState> = inject(NgStore);
-  
-    public pokemons$: Observable&lt;Pokemon[]> = this.store.selectValues(s => s.pokemons);
-  
-}</code></pre>
-
-    <p>You just need to call the "selectValues" function of the store in order to retrieve an observables of this
-        section of
-        the store. This means that each time something in this section will change, the observable will emit the new
-        value.
-        In this case, we simply watch for all the pokemons of the store.</p>
-
-    <p>Now the code to add data in the store:</p>
-
-    <pre><code class="language-typescript">public add() {{ '{' }}
-    this.store.upsertValue&lt;Pokemon>(s => s.pokemons, {{ '{' }} id: 1, name: 'Pikachu', type: 'electric' });
-}</code></pre>
-
-    <p>Adding data in the store can be done using the `upsertValue`. This function adds or update an entity in the store
-        based on its ID. You have to use it to add data into the store but you can update data from it in a different
-        way,
-        which is what we do in the "update" function:</p>
-
-    <pre><code class="language-typescript">public update() {{ '{' }}
-    this.store.updateValueByKey&lt;Pokemon>(s => s.pokemons, 1, p => p.name = 'Dracofeu');
-}</code></pre>
-
-    <p>The difference between the `updateValueByKey` and the `upsertValue` is that the former one will give you access
-        to
-        the object you want to update and you'll be able to updte it the way you want, while the latter is generally use
-        when you already have an object containing the properties to update. Most of the time, you'll use `upsertValue`
-        but
-        `updateValueByKey` can also be pretty handy.
+    <p>
+        Find functions are used to find entities or values in the store. Let's start by updating the initial state of
+        the store in order to insert some data.
     </p>
 
-    <p>One thing important to mention here is that object in the store <strong>are</strong> immutable. In the example
-        above,
-        the way the object is updated might look like entities are mutable but it is not the case. Indeed, "ng-store" is
-        using the awesome <a href="https://github.com/immerjs/immer"
-           target="_blank">immer</a> library used that leverage JavaScript proxies in order to handle immutability in a
-        very
-        handy way.</p>
-
-    <p>Finally, the "remove" function:</p>
-
-    <pre><code class="language-typescript">public remove() {{ '{' }}
-    this.store.removeEntitiesByKeys&lt;Pokemon>(s => s.pokemons, 1);
+    <pre>
+<code class="language-typescript">export const initial: AppState = {{ '{' }}
+    pokemons: createEntities&lt;Pokemon>([
+        {{ '{' }}
+            id: 1,
+            name: 'Pikachu',
+            type: 'electric'
+        },
+        {{ '{' }}
+            id: 2,
+            name: 'Bulbasaur',
+            type: 'grass'
+        },
+        {{ '{' }}
+            id: 3,
+            name: 'Charmander',
+            type: 'fire'
+        },
+        {{ '{' }}
+            id: 4,
+            name: 'Charmander',
+            type: 'fire'
+        },
+        {{ '{' }}
+            id: 5,
+            name: 'Squirtle',
+            type: 'water'
+        },
+        {{ '{' }}
+            id: 6,
+            name: 'Caterpie',
+            type: 'bug'
+        },
+        {{ '{' }}
+            id: 7,
+            name: 'Weedle',
+            type: 'bug'
+        },
+        {{ '{' }}
+            id: 8,
+            name: 'Pidgey',
+            type: 'normal'
+        },
+        {{ '{' }}
+            id: 9,
+            name: 'Pidgey',
+            type: 'normal'
+        },
+        {{ '{' }}
+            id: 10,
+            name: 'Rattata',
+            type: 'normal'
+        },
+        {{ '{' }}
+            id: 11,
+            name: 'Spearow ',
+            type: 'normal'
+        },
+        {{ '{' }}
+            id: 12,
+            name: 'Ekans ',
+            type: 'poison'
+        }
+    ])
 }</code></pre>
 
--->
+    <p>
+        Here's the ncessary code used to retrieve all the pokemons from the store:
+    </p>
 
-    <p>The rest is coming soon...</p>
+    <pre>
+<code class="language-typescript">export class AppComponent {{ '{' }}
+
+  private readonly _store: NgStore&lt;AppState> = inject(NgStore);
+
+  public pokemons: Pokemon[] = this._store.getValues(s => s.pokemons);
+  public trackByValue: TrackByFunction&lt;Pokemon> = trackByValue;
+
+}</code></pre>
+
+    <p>
+        We're using the <code class="language-typescript">getValues</code> function to returns all the values stored in
+        the "pokemons" section of the store. The <code class="language-typescript">trackByValue/</code> variable is a
+        function proposed by ng-store to tell <code class="language-typescript">ngFor</code> to use the "id" property of
+        array values.
+    </p>
+
+    <pre>
+<code class="language-xml">&lt;h1>Pokemon&lt;/h1>
+
+&lt;div *ngFor="let pokemon of pokemons; trackBy: trackByValue">{{ '{' + '{' }} pokemon.name }}&lt;/div></code></pre>
+
+    <p>The result being:</p>
+
+    <div class="img">
+        <img src="assets/img/get-values.png" />
+    </div>
+
+    <p>
+        Now, to understand the difference between an entity and its value, let's use this variation of the code:
+    </p>
+
+    <pre>
+<code class="language-typescript">export class AppComponent {{ '{' }}
+
+  private readonly _store: NgStore&lt;AppState> = inject(NgStore);
+
+  public pokemons: Entity&lt;Pokemon>[] = this._store.getEntities(s => s.pokemons);
+  public trackByEntity: TrackByFunction&lt;Entity&lt;Pokemon>> = trackByEntity;
+
+}</code></pre>
+
+    <pre>
+<code class="language-xml">&lt;h1>Pokemon&lt;/h1>
+    
+&lt;div *ngFor="let pokemon of pokemons; trackBy: trackByEntity">{{ '{' + '{' }} pokemon | json }}&lt;/div></code></pre>
+
+    <p>
+        This time, the result is:
+    </p>
+
+    <div class="img">
+        <img src="assets/img/get-entities.png" />
+    </div>
+
+    <p>
+        As you can see, an entity is an object with a <code class="language-typescript">value</code> property that
+        contains the actual object you want to use. It also contains other properties used by "ng-store" to maintain the
+        store in a correct state. Besides, we'll see later in this document that you can use some of these properties to
+        update the UI of your component depending on the state of the entities in the store.
+    </p>
+
+    <p class="message information">
+        In this case, we used <code class="language-typescript">trackByEntity</code> as we're dealing with entities.
+    </p>
+
+    <p>
+        It is also possible to find a value or an entity in the store based on its "id" using the <code
+              class="language-typescript">findValueByKey</code> or <code
+              class="language-typescript">findEntityByKey</code>. For example, here is how you would find the pokemon
+        with the "id" 1.
+    </p>
+
+    <pre>
+<code class="language-typescript">public firstValue: Pokemon | null = this._store.findValueByKey(s => s.pokemons, 1);
+public firstEntity: Entity&lt;Pokemon> | null = this._store.findEntityByKey(s => s.pokemons, 1);</code></pre>
+
+    <p>
+        Note that these functions return <code class="language-typescript">null</code> if the entity cannot be found.
+    </p>
+
+    <p>
+        It is also possible to find values by any other criteria using the functions <code
+              class="language-typescript">findValuesBy</code> or <code
+              class="language-typescript">findEntitiesBy</code>. In the following example, we'll find all "normal"
+        pokemons.
+    </p>
+
+    <pre>
+<code class="language-typescript">public normalValues: Pokemon[] = this._store.findValuesBy(s => s.pokemons, p => p.type === 'normal');
+public normalEntities: Entity&lt;Pokemon>[] = this._store.findEntitiesBy(s => s.pokemons, e => e.value.type === 'normal');</code></pre>
+
+    <p class="message warning">
+        Even though the code above works, it's recommanded and more performant to use <a href="#indexes">indexes</a> as
+        much as possible to find values based on another property than the "id".
+    </p>
+
+    <p>
+        You can also use the functions <code class="language-typescript">findEntityBy</code> and <code
+              class="language-typescript">findValueBy</code> to find the first entity or value matching the condition.
+    </p>
+
+    <p class="message information">
+        You can find the code of this section in <a
+           href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/01_Find"
+           target="_blank">the first example</a> of the playground.
+    </p>
 </main>
