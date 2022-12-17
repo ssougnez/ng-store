@@ -22,6 +22,8 @@
         <li><a href="#state">State</a></li>
         <li><a href="#configuration">Configuration</a></li>
         <li><a href="#find">Find functions</a></li>
+        <li><a href="#select">Select functions</a></li>
+        <li><a href="#indexes">Indexes</a></li>
     </ul>
 
     <h1 id="context">Context</h1>
@@ -323,7 +325,7 @@ export type AppState = {{ '{' }}
         The configuration object accepts other properties but we'll cover them later in this documentation.
     </p>
 
-    <h1 id="select-find">Find functions</h1>
+    <h1 id="find">Find functions</h1>
 
     <p>
         Find functions are used to find entities or values in the store. Let's start by updating the initial state of
@@ -412,7 +414,7 @@ export type AppState = {{ '{' }}
 
     <p>
         We're using the <code class="language-typescript">getValues</code> function to returns all the values stored in
-        the "pokemons" section of the store. The <code class="language-typescript">trackByValue/</code> variable is a
+        the "pokemons" section of the store. The <code class="language-typescript">trackByValue</code> variable is a
         function proposed by ng-store to tell <code class="language-typescript">ngFor</code> to use the "id" property of
         array values.
     </p>
@@ -507,4 +509,97 @@ public normalEntities: Entity&lt;Pokemon>[] = this._store.findEntitiesBy(s => s.
            href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/01_Find"
            target="_blank">the first example</a> of the playground.
     </p>
+
+    <h1 id="select">Select functions</h1>
+
+    <p>
+        In the previous chapter, we saw how to retrieve values from the store. Even though it works, there is something
+        you need be aware of: The store is <strong>immutable</strong>. You can confirm this by trying to do something
+        like this:
+    </p>
+
+    <pre>
+<code class="language-typescript">let pokemon: Pokemon | null = this._store.findValueByKey(s => s.pokemons, 1);
+
+if (pokemon !== null) {{ '{' }}
+  pokemon.name = 'Super pikachu';
+}</code></pre>
+
+    <p>
+        The code above would produce the following error in the console:
+    </p>
+
+    <div class="img">
+        <img src="assets/img/immutable-error.png" />
+    </div>
+
+    <p>
+        Indeed, values in the store are <strong>immutable</strong>, which means that you cannot directly update them
+        like
+        in the example above. If you never used immutability, it can seem weird but I strongly advice you to read on the
+        subject to understand why it is a better idea to store the object like this.
+    </p>
+
+    <p>
+        There are multiple ways to ensure immutability in JavaScript and ng-store uses an awesome library called <a
+           href="https://github.com/immerjs/immer"
+           target="_blank">immer</a>. I won't talk about this library in here but I strongly advice you to have a look
+        at it if you want to understand how ng-store works under the hood.
+    </p>
+
+    <p>
+        One important consequence of immutability is that objects that you retrieve from the store using <a
+           href="find">find functions</a> might not always display the most up to date data. Indeed, say you
+        get a value from the store using a find function. If this value changes in the store, your component will still
+        hold a reference to the same object, so the one that hasn't been modified (as the modification triggers the
+        creation of a new object), so you need to have a way to know when a value is modified in order to refresh your
+        component accordingly, which is exactly what select functions are for.
+    </p>
+
+    <p>
+        Basically, select functions are the same than find functions but they return observables instead of values or
+        entities. For example:
+    </p>
+
+    <pre>
+<code class="language-typescript">public values$: Observable&lt;Pokemon[]> = this._store.selectValues(s => s.pokemons);
+public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntities(s => s.pokemons);</code></pre>
+
+    <p>
+        As you can see, you use <code class="language-typescript">selectValues</code> and <code
+              class="language-typescript">selectEntities</code> the same way you use <code
+              class="language-typescript">getValues</code> and <code class="language-typescript">getEntities</code>. The
+        only difference is that these functions return an observable instead of the values or entities. As for the
+        templates, the code is almost the same.
+    </p>
+
+    <pre>
+<code class="language-xml">&lt;h1>Values&lt;/h1>
+
+&lt;div *ngFor="let pokemon of values$ | async; trackBy: trackByValue">{{ '{' + '{' }} pokemon | json }}&lt;/div>
+
+&lt;h1>Entities&lt;/h1>
+
+&lt;div *ngFor="let pokemon of entities$ | async; trackBy: trackByEntity">{{ '{' + '{' }} pokemon | json }}&lt;/div></code></pre>
+
+    <p>
+        The only difference here is that you have to use the <code class="language-typescript">async</code> pipe.
+    </p>
+
+    <p>
+        Using the select functions, you ensure that your component will be notified each time a values that you
+        retrieved changes. Another big advantage is that you can use the <code class="language-typescript">async</code>
+        pipe to refresh the view of the component in a way supported by the "OnPush" change detection strategy.
+    </p>
+
+    <p class="message information">
+        You can find the code of this section in <a
+           href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/01_Select"
+           target="_blank">the second example</a> of the playground.
+    </p>
+
+    <h1 id="indexes">Indexes</h1>
+
+    
+
 </main>

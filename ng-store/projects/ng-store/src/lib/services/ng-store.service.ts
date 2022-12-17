@@ -167,7 +167,7 @@ export class NgStore<TStore>  {
       this._http = inject(_config.httpClientType ?? HttpClient);
     }
 
-    this._store = new BehaviorSubject(_config.initialValue as TStore);
+    this._store = new BehaviorSubject(produce(_config.initialValue as TStore, draft => draft));    
     this._root = this._store.asObservable();
   }
 
