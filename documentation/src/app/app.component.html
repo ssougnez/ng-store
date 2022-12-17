@@ -377,7 +377,7 @@ export type AppState = {{ '{' }}
         },
         {{ '{' }}
             id: 9,
-            name: 'Pidgey',
+            name: 'Nidoran',
             type: 'normal'
         },
         {{ '{' }}
@@ -594,12 +594,58 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
 
     <p class="message information">
         You can find the code of this section in <a
-           href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/01_Select"
+           href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/02_Select"
            target="_blank">the second example</a> of the playground.
     </p>
 
     <h1 id="indexes">Indexes</h1>
 
-    
+    <p>
+        In the previous example, we saw how to select values based on another critera than their key. Even though it
+        works, it's not optimal for performances. For example:
+    </p>
+
+    <pre>
+<code class="language-typescript">public normal: Observable&lt;Pokemon[]> = this._store.selectValuesBy(s => s.pokemons, p => p.type === 'normal');</code></pre>
+
+    <p>
+        The issue here is that when the store gets updated, it will emit its new value, therefore, the predicate above
+        will get executed for all pokemons once again.. If there are less than 10 000 items, it should be pretty fast,
+        however, if your store contains a huge amount of pokemons, it can be pretty intensive to examine all of them to
+        only return the normal ones. In this case, it is recommended to use indexes instead. Basically, an index is
+        a property of the object that the store uses to organize its content in an efficient way.
+    </p>
+
+    <p>
+        The first thing to do in order to use indexes is to define them when using <code
+              class="language-typescript">createEntities</code>:
+    </p>
+
+    <pre>
+<code class="language-typescript">export const initial: AppState = {{ '{' }}
+    pokemons: createEntities&lt;Pokemon>([ ... ], ['type'])
+}</code></pre>
+
+    <p>
+        Indexes are defined using the second parameter of <code class="language-typescript">createEntities</code> by
+        passing an array of property names that will be used as indexes. It can be tempting to define every property
+        in there but it is better to only defines the ones you'll really be using the most. Indeed, even though ng-store
+        supports multiple indexes, maintaining them has a small cost, so it's better to avoid it if you don't need it.
+    </p>
+
+    <p>
+        Now that we defined our index, we can simply used it via the functions <code
+              class="language-typescript">findValuesByIndex</code> or <code
+              class="language-typescript">selectValuesByIndex</code>:
+    </p>
+
+    <pre>
+<code class="language-typescript">public normal: Observable&lt;Pokemon[]> = this._store.selectValuesByIndex(s => s.pokemons, 'type', 'normal');</code></pre>
+
+    <p class="message information">
+        You can find the code of this section in <a
+           href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/03_Indexes"
+           target="_blank">the third example</a> of the playground.
+    </p>
 
 </main>

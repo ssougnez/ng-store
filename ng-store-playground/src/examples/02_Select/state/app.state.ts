@@ -49,8 +49,8 @@ export const initial: AppState = {
         },
         {
             id: 9,
-            name: 'Pidgey',
-            type: 'normal'
+            name: 'Nidoran',
+            type: 'poison'
         },
         {
             id: 10,

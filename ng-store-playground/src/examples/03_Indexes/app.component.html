@@ -1,0 +1,7 @@
+<h1>Normal values</h1>
+
+<div *ngFor="let pokemon of normalValues$ | async; trackBy: trackByValue">{{ pokemon | json }}</div>
+
+<h1>Normal entities</h1>
+
+<div *ngFor="let pokemon of normalEntities$ | async; trackBy: trackByEntity">{{ pokemon | json }}</div>

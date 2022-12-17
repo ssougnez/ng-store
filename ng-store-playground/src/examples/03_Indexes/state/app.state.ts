@@ -67,5 +67,5 @@ export const initial: AppState = {
             name: 'Ekans ',
             type: 'poison'
         }
-    ])
+    ], ['type'])
 }
