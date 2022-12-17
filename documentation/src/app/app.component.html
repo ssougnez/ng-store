@@ -24,6 +24,7 @@
         <li><a href="#find">Find functions</a></li>
         <li><a href="#select">Select functions</a></li>
         <li><a href="#indexes">Indexes</a></li>
+        <li><a href="#update">Update</a></li>
     </ul>
 
     <h1 id="context">Context</h1>
@@ -646,6 +647,165 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
         You can find the code of this section in <a
            href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/03_Indexes"
            target="_blank">the third example</a> of the playground.
+    </p>
+
+    <h1 id="update">Update</h1>
+
+    <p>
+        Updating the store is pretty straightforward. In most scenario, data to add or update in the store are
+        complete entities received by REST API, so you'll want to use the <code
+              class="language-typescript">upsertValue</code> or <code class="language-typescript">upsertValues</code>
+        functions. These functions add or update an object in the store based on its key. If an object with its key is
+        already in the store, it will be merged with the one you pass to these functions. The only difference between
+        these two functions is that <code class="language-typescript">upsertValues</code> expects an array and is used
+        to upsert one or multiple values.
+    </p>
+
+    <p>
+        Say that you have the following component:
+    </p>
+
+    <pre>
+<code class="language-typescript">export class AppComponent {{ '{' }}
+
+  private readonly _store: NgStore&lt;AppState> = inject(NgStore);
+
+  public pokemons$: Observable&lt;Pokemon[]> = this._store.selectValues&lt;Pokemon>(s => s.pokemons).pipe(
+    map(pokemons => pokemons.sort((p1, p2) => p1.name.localeCompare(p2.name)))
+  );
+
+  public trackByValue: TrackByFunction&lt;Pokemon> = trackByValue;
+
+  public upsertNonExisting(): void {{ '{' }}
+
+  }
+
+  public upsertExisting(): void {{ '{' }}
+
+  }
+
+  public updateExisting(): void {{ '{' }}
+    
+  }
+}</code></pre>
+
+    <p>
+        With the following template:
+    </p>
+
+    <pre>
+<code class="language-xml">&lt;div *ngFor="let p of pokemons$ | async; trackBy: trackByValue">
+    {{ '{' + '{' }} p.name }}
+&lt;/div>
+
+&lt;div>
+    &lt;button (click)="upsertNonExisting()">Upsert non existing&lt;/button>
+&lt;/div>
+&lt;div>
+    &lt;button (click)="upsertExisting()">Upsert existing&lt;/button>
+&lt;/div>
+&lt;div>
+    &lt;button (click)="updateExisting()">Update existing&lt;/button>
+&lt;/div></code></pre>
+
+    <p>
+        Nothing fancy, so far it simply selects all pokemons from the store, sort them in alphabetical order then
+        display them. There are also three buttons. The first one upserts a new value in the store, the second one
+        upserts a value that is already in the store (but with different data to show the effect) and the third
+        one updates a property of a value.
+    </p>
+
+    <p>
+        Here is the code of the first button:
+    </p>
+
+    <pre>
+<code class="language-typescript">public upsertNonExisting(): void {{ '{' }}
+  const pokemon: Pokemon = {{ '{' }}
+    id: 13,
+    name: 'Vulpix',
+    type: 'fire'
+  };
+
+  this._store.upsertValue&lt;Pokemon>(s => s.pokemons, pokemon);
+}</code></pre>
+
+    <p>
+        It does not get simpler than this. You just pass the new value to add in the store, and it gets added. Updating
+        an existing value with another one is also very simple:
+    </p>
+
+    <pre>
+<code class="language-typescript">public upsertExisting(): void {{ '{' }}
+  const pokemon: Pokemon = {{ '{' }}
+    id: 1,
+    name: 'Zubat',
+    type: 'poison'
+  };
+
+  this._store.upsertValue&lt;Pokemon>(s => s.pokemons, pokemon);
+}</code></pre>
+
+    <p>
+        Here, we simply update the value with key 1 with a new value. However, it can happen that you don't have an
+        object containing all the data of the entity you want to update, in this case, you can use the <code
+              class="language-typescript">updateValueByKey</code> function to update an entity the way you want:
+    </p>
+
+    <pre>
+<code class="language-typescript">public updateExisting(): void {{ '{' }}
+  this._store.updateValueByKey(s => s.pokemons, 1, p => p.name = 'Jigglypuff');
+}</code></pre>
+
+    <p>
+        Let see what the component displays at first:
+    </p>
+
+    <div class="img">
+        <img src="assets/img/upsert-01.png" />
+    </div>
+
+    <p>
+        Now, let's click on the first button:
+    </p>
+
+    <div class="img">
+        <img src="assets/img/upsert-02.png" />
+    </div>
+
+    <p>
+        Vulpix got added to the list and as we're using an observable, the view got refreshed automatically even though
+        we're using the "OnPush" change detection strategy. Now, push the second button.
+    </p>
+
+    <div class="img">
+        <img src="assets/img/upsert-03.png" />
+    </div>
+
+    <p>
+        Pikachu disappeared and got replaced by Zubat. And finally, the third button:
+    </p>
+
+    <div class="img">
+        <img src="assets/img/upsert-04.png" />
+    </div>
+
+    <p>
+        Zubat got updated and became Jigglypuff.
+    </p>
+
+    <p>Besides these functions, you can also use the following ones:</p>
+
+    <ul>
+        <li><strong>updateEntitiesBy</strong>: Update <strong>entities</strong> based on a predicate.</li>
+        <li><strong>updateEntityByKey</strong>: Update an <strong>entity</strong> based on its key.</li>
+        <li><strong>updateValuesBy</strong>: Update <strong>values</strong> based on a predicate.</li>
+    </ul>
+
+    <p class="message information">
+        You can find the code of this section in <a
+           href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/04_Update"
+           target="_blank">the fourth example</a> of the playground.
     </p>
 
 </main>
