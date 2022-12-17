@@ -1,5 +1,8 @@
+import { provideHttpClient } from '@angular/common/http';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { NG_STORE_CONFIG, StoreConfiguration } from 'ng-store';
+import { HttpClient } from '@angular/common/http';
+
 import { AppComponent as FindComponent } from './examples/01_Find/app.component';
 import { initial as initialFindExample } from './examples/01_Find/state/app.state';
 
@@ -33,7 +36,7 @@ import { initial as initialContainerExample } from './examples/10_Container/stat
 import { AppComponent as ComponentComponent } from './examples/11_Component/app.component';
 import { initial as initialComponentExample } from './examples/11_Component/state/app.state';
 
-const component = RemoveComponent;
+const component = LoadComponent;
 
 const configurations = new Map();
 
@@ -77,13 +80,16 @@ configurations.set(RemoveComponent, [{
   } as StoreConfiguration
 }]);
 
-configurations.set(LoadComponent, [{
-  provide: NG_STORE_CONFIG,
-  useValue: {
-    initialValue: initialLoadExample,
-    httpClientType: null
-  } as StoreConfiguration
-}]);
+configurations.set(LoadComponent, [
+  {
+    provide: NG_STORE_CONFIG,
+    useValue: {
+      initialValue: initialLoadExample,
+      httpClientType: HttpClient
+    } as StoreConfiguration,
+  },
+  provideHttpClient()
+]);
 
 configurations.set(PostComponent, [{
   provide: NG_STORE_CONFIG,

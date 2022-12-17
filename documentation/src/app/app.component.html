@@ -31,7 +31,7 @@
         <li><a href="#put">Put</a></li>
         <li><a href="#delete">Delete</a></li>
         <li><a href="#ngs-container">ngs-container</a></li>
-        <li><a href="#store-component">store-component</a></li>
+        <li><a href="#store-component">StoreComponent</a></li>
         <li><a href="#roadmap">Roadmap</a></li>
     </ul>
 
@@ -854,7 +854,22 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
     <h1 id="load">Load</h1>
 
     <p>
-        Coming soon...
+        So far, we saw how to use the store in a synchronous way, however, in a real life scenario, the data in the
+        store gets most of the time loaded using REST API in an asynchronous way. You could do it with what we saw above
+        but ng-store comes with support for asynchronous loading of data. It also proposes some components to
+        simplify the UI. Let's start with a simple use case:
+    </p>
+
+    <ul>
+        <li>Pokemons are loaded using a call to a REST API.</li>
+        <li>We want to load all the pokemons but not all of their properties, to save band-width (partial load).</li>
+        <li>We want a component to display a pokemon based on its ID (all its properties).</li>
+    </ul>
+
+    <p>
+        For those who want to run the examples from the playground, I'm using the "json-server" library to create a fake
+        web service. You can start it by running the command <code class="language-typescript">yarn json</code> in
+        the playground directory.
     </p>
 
     <h1 id="post">Post</h1>
@@ -882,7 +897,7 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
     <p>
         Coming soon...
     </p>
-    
+
     <h1 id="roadmap">Roadmap</h1>
 
     <p>

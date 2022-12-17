@@ -1,13 +1,15 @@
-<div *ngFor="let p of pokemons$ | async; trackBy: trackByValue">
-    {{ p.name }}
-</div>
+<ngs-container [query$]="query$"
+               [data$]="pokemons$"
+               loaderType="text">
+    <ng-template let-pokemons>
+        <div class="flex-row flex-aic gap1"
+             *ngFor="let p of pokemons; trackBy: trackByValue">
+            <div>{{ p.name }}</div>
+            <i class="fa fa-solid fa-eye pointer"
+               (click)="selectedId = p.id"></i>
+        </div>
+    </ng-template>
+</ngs-container>
 
-<div>
-    <button (click)="upsertNonExisting()">Upsert non existing</button>
-</div>
-<div>
-    <button (click)="upsertExisting()">Upsert existing</button>
-</div>
-<div>
-    <button (click)="updateExisting()">Update existing</button>
-</div>
+<app-pokemon *ngIf="selectedId !== null"
+             [id]="selectedId"></app-pokemon>

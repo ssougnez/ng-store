@@ -1,61 +1,43 @@
-import { AsyncPipe, JsonPipe, NgFor } from '@angular/common';
+import { NgFor, NgIf } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, TrackByFunction } from '@angular/core';
-import { NgStore, trackByValue } from 'ng-store';
+import { NgStore, NgStoreModule, trackByValue } from 'ng-store';
 import { map, Observable } from 'rxjs';
+import { PokemonComponent } from './components/pokemon.component';
 import { Pokemon } from './models/pokemon.model';
+import { PokemonService } from './services/pokemon.service';
 import { AppState } from './state/app.state';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
+  styleUrls: ['./app.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
   imports: [
-    AsyncPipe,
+    NgIf,
     NgFor,
-    JsonPipe
+    NgStoreModule,
+    PokemonComponent
   ]
 })
 export class AppComponent {
 
   /************************************************** SERVICES **************************************************/
 
+  private readonly _pokemonService = inject(PokemonService);
   private readonly _store: NgStore<AppState> = inject(NgStore);
 
   /************************************************** VARIABLES **************************************************/
 
+  public selectedId: number | null = null;
+
+  /************************************************** OBSERVABLES **************************************************/
+
+  public query$: Observable<Pokemon[]> = this._pokemonService.loadPokemons();
   public pokemons$: Observable<Pokemon[]> = this._store.selectValues<Pokemon>(s => s.pokemons).pipe(
     map(pokemons => pokemons.sort((p1, p2) => p1.name.localeCompare(p2.name)))
   );
 
   public trackByValue: TrackByFunction<Pokemon> = trackByValue;
 
-  /************************************************** PUBLIC **************************************************/
-
-  /** */
-  public upsertNonExisting(): void {
-    const pokemon: Pokemon = {
-      id: 13,
-      name: 'Vulpix',
-      type: 'fire'
-    };
-
-    this._store.upsertValue<Pokemon>(s => s.pokemons, pokemon);
-  }
-
-  /** */
-  public upsertExisting(): void {
-    const pokemon: Pokemon = {
-      id: 1,
-      name: 'Zubat',
-      type: 'poison'
-    };
-
-    this._store.upsertValue<Pokemon>(s => s.pokemons, pokemon);
-  }
-
-  /** */
-  public updateExisting(): void {
-    this._store.updateValueByKey(s => s.pokemons, 1, p => p.name = 'Jigglypuff');
-  }
 }
