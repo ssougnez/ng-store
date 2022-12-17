@@ -15,8 +15,11 @@
     <ul>
         <li><a href="#context">Context</a></li>
         <li><a href="#introduction">Introduction</a></li>
+        <li><a href="#playground">PLayground</a></li>
         <li><a href="#installation">Installation</a></li>
         <li><a href="#principle">Principle</a></li>
+        <li><a href="#models">Models</a></li>
+        <li><a href="#state">State</a></li>
         <li><a href="#configuration">Configuration</a></li>
         <li><a href="#getting-started">Getting started</a></li>
     </ul>
@@ -72,169 +75,213 @@
     </ul>
 
     <p>
-        However, it's still, in my opinion not the perfect solution. Indeed, with services maintaining their own data
+        However, it's still, in my opinion, not the perfect solution. Indeed, with services maintaining their own data
         arise some pain points:
     </p>
 
     <ul>
-        <li>What if the service A needs data from the services B and vice versa. This will create a cyclic dependency
-            that
-            will be difficult to solve properly</li>
-        <li>It's difficult to ensure that services fetch and maintain their data in the same way. This can be leverage
-            use a
-            base class but it adds some complexity</li>
-        <li>You still have to think and implement a way of fetching data from your back end in a consistent way</li>
+        <li>
+            What if the service A needs data from the services B and vice versa. This will create a cyclic dependency
+            that will be difficult to solve properly.
+        </li>
+        <li>
+            It's difficult to ensure that services fetch and maintain their data in the same way. This can be leveraged
+            using a base class but it adds some complexity.
+        </li>
+        <li>
+            If you're using the "OnPush" change detection strategy (as you should), simply updating data in a service
+            won't refresh the views that depend on its data. Indeed, you'll need to implement a system propagating the
+            value change down to the components. It's not very complex but it adds unecessary boilerplate.
+        </li>
+        <li>
+            You still have to think and implement a way of fetching data from your back end in a consistent way.
+        </li>
     </ul>
 
-    <p>I faced all this issues and consideration in my day to day work for a while, which is why I decided to have a
-        look at
-        store/state management systems out there.</p>
+    <p>
+        I faced all these issues and considerations in my day to day work for a while, which is why I decided to have a
+        look at store/state management systems out there.
+    </p>
+
     <p>To be honest, I only checked one out: <a href="https://ngrx.io/"
-           target="_blank">ngrx</a>. Mostly because it's the most popular
-        one.
+           target="_blank">ngrx</a>. Mostly because it's the most popular one.
     </p>
-    <p>Before reading the following, please consider that I didn't use it for a long time and I probably onlu scratched
-        the
-        surface so the following lines might not be entirely correct or can be outdated.</p>
-    <p>My general feeling about this library is that it is way too complex to use. You have to create effect, reducer,
-        actions, selectors, etc... and at the end, everything ties up magically and it becomes pretty cumbersome to have
-        a
-        global idea of what's happening in your application or to debug it.</p>
-    <p>Another issue I had with it was the way immutability is handled. Basically, you have to do the heavy lifting
-        using
-        the spread operator in order to create new objects based on existing objects. I found it pretty cumbersome and
-        not
-        very intuitive (spoiler alert: "ng-store" handles it in a way that is totally transparent to you).</p>
-    <p>Once again, I'm sure it's a perfectly good library but long story short, it didn't suit me.</p>
-    <p>However, I really liked the idea of having on common location to store all the data of the application. Besides,
-        the
-        reactivity of the store also charmed me a lot, which is why I decided to implement my own store management
-        library.
+
+    <p>
+        Before reading the following lines, please consider that I didn't use it for a long time and I probably only
+        scratched the surface so the following lines might not be entirely correct or can be outdated.
     </p>
-    <p>At the time of writing (2023), I've been working and using this library for two years and now that it is stable,
-        I
-        feel that it can be useful for other people than me.</p>
-    <p>In this documentation, we'll see the basic principle behind ng-store, how to configure and use it. After reading,
-        you'll know everything to know about it and if you liked what you read, maybe you'll want to use it in your app
-        😀
+
+    <p>
+        My general feeling about this library is that it is waaay too complex to use. You have to create actions,
+        effects, reducers, selectors, etc... and at the end, everything ties up magically and it becomes pretty
+        cumbersome to have a clear view of what's happening in your application or to debug it.
     </p>
+
+    <p>
+        Another issue I had with it was the way immutability is handled. Basically, you have to do the heavy lifting
+        using the spread operator in order to create new objects based on existing ones. I found it pretty cumbersome
+        and not very intuitive (spoiler alert: "ng-store" handles it in a way that is totally transparent to you).
+    </p>
+
+    <p>
+        Once again, I'm sure it's a perfectly good library but long story short, it didn't suit me.
+    </p>
+
+    <p>
+        However, I really liked the idea of having one common location to store all the data of the application.
+        Besides, the reactivity of the store also charmed me a lot, which is why I decided to implement my own store
+        management library.
+    </p>
+
+    <p>
+        At the time of writing (2023), I've been working on and using this library for two years and now that it is
+        stable, I feel that it can be useful to other developers than me.
+    </p>
+
+    <p>
+        In this documentation, we'll see the basic principle behind ng-store, how to configure and use it. After
+        reading, you'll know everything there is about it and if you liked what you read, maybe you'll want to use it in
+        your app 😀
+    </p>
+
+    <h1 id="playground">Playground</h1>
+
+    <p>You can find the code of the examples we'll talk about later in this article in the <a
+           href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src"
+           target="_blank">GitHub playground</a>. The only thing you need to do is update the line 6 of the "main.ts"
+        file to change the example you want to build.</p>
 
     <h1 id="installation">Installation</h1>
 
     <p>Simply run:</p>
 
-    <code>yarn add immer @ssougnez/ng-store</code>
+    <pre><code class="language-typescript">yarn add immer @ssougnez/ng-store</code></pre>
 
     <h1 id="principle">Principle</h1>
 
-    <p>You can use "ng-store" the way you want, however, you'll find in this section some advices to use it in an
-        optimal
-        way.</p>
+    <p>
+        You can use "ng-store" the way you want, however, you'll find in this section some advices to use it in an
+        optimal way.
+    </p>
 
-    <p>Basically, the only principle there is to use "flat object" as musch as possible. What I call "flat objects" are
-        objects without any complex properties other than ones containing abstract data. For example, this is not a
-        "flat
-        object":</p>
+    <p>
+        Basically, the main principle consists in using "flat objects" as musch as possible. What I call "flat objects"
+        are objects without any complex properties other than ones containing abstract data. For example, this is not a
+        "flat object":</p>
 
-    <pre><code class="language-typescript">{{ '{' }}
+    <pre>
+<code class="language-typescript">{{ '{' }}
     firstName: "Nicolas",
     lastName: "Cage",
     age: 50,
-    partner: {{ '{' }}
+    friends: [{{ '{' }}
         firstName: "Nicole",
         lastName: "Kidman",
         age: 56
-    }
+    }]
 }</code></pre>
 
-    <p>The issue with this kind of objet is that it is an open door to data redundancy. A better version of this object
-        would be its flat one:</p>
+    <p>
+        The issue with this kind of objet is that it is an open door to data redundancy. Indeed, say that you fetch
+        these data from a back end using REST API. It is very likely that the different users will have the same
+        friends, meaning that a user data might be located in the "friends" array of multiple objects, causing the data
+        to be bigger and duplicated. A better version of it would be:
+    </p>
 
-    <pre><code class="language-typescript">{{ '{' }}
+    <pre>
+<code class="language-typescript">{{ '{' }}
     firstName: "Nicolas",
     lastName: "Cage",
     age: 50,
-    partnerId: 3
-}
-</code></pre>
+    friends: [3, 19, 5]
+}</code></pre>
 
-    <p>In this approach, object are treated as entity identified by a specific property and do not contain complex
-        property
-        other than abstract data. "Abstract data" are data that does not represent entities in themselves, for example,
-        some
-        configuration for a specific entity.</p>
-
-    <p>Basically, you have to think about entities as row in a relational database. In these, you have regular column
-        storing simple data and when you need more complex data, you store them in another table referenced by a foreign
-        key
-        in your primary one. In some circunstance, you'll also create a text column storing abstract data.</p>
-
-    <p>Following this principle will help you a lot using "ng-store", and this is the approach we'll be using for the
-        rest
-        of this documentation.</p>
-
-    <h1 id="configuration">Configuration</h1>
-
-    <p>The current version of "ng-store" does not support yet standalone component. You can use "ng-store" in standalone
-        component but you have to import the whole module to be able to work with it, so the rest of this documentation
-        won't be focusing on standalone components. However, the support of standalone components are in the roadmap and
-        will be added in the future.</p>
-
-    <p>The first thing you need to use the store is some type for your entities. Let's start by creating a "Pokemon"
-        entity:
+    <p>
+        In this approach, objects are treated as <strong>entities</strong> identified by a specific property that do not
+        contain complex properties other than abstract data. "Abstract data" are data that does not represent entities
+        in themselves, for example, some configuration for a specific entity.
     </p>
 
-    <pre><code class="language-typescript">import {{ '{' }} BaseEntity } from "@ssougnez/ng-store";
+    <p>
+        Basically, you have to think about entities as rows in a relational database. In these, you have regular columns
+        storing simple data and when you need more complex data, you store them in another table referenced by a foreign
+        key in your primary one. In some circunstance, you'll also create a text column storing abstract data (in JSON).
+    </p>
+
+    <p>
+        Following this principle will help you a lot using "ng-store", but also for working on your back end. Indeed,
+        when you have no real guidelines about the form of the object to return via a web service, it can be difficult
+        to know what data to fetch from the database because you're not sure what data will be needed by the REST API
+        call. With this approach, most of the time, you'll fetch data from your database in the most basic way.
+    </p>
+
+    <h1 id="models">Models</h1>
+
+    <p>
+        The core concept of the store is "entities". As explained above, an entity is a basic object with only
+        simple properties. It must also contain an "id" property of the type you want. To ensure this last requirement,
+        all your entities need to extend the <code class="language-typescript">BaseEntity&lt;T></code> base class
+        where "T" is the type of the "id" property. For example, here is an example of a "Pokemon" entity.
+    </p>
+
+    <pre>
+<code class="language-typescript">import {{ '{' }} BaseEntity } from "@ssougnez/ng-store";
 
 export type Pokemon = BaseEntity&lt;number> & {{ '{' }}
     name: string;
     type: 'water' | 'fire' | 'electric';
 }</code></pre>
 
-    <p>An entity must always inherits from `BaseEntity&lt;T>` where `T` is the type of its "id" property. Indeed, an
-        entity
-        is <strong>always</strong> identified by its "id" property, this is how you'll be able to quickly find the
-        entity in
-        the store.</p>
+    <h1 id="state">State</h1>
 
-    <p>Now that we have an entity, we need to create our state and its initial value. Usually, you'll want to create a
-        "state" directly with a file in it called "app.state.ts". Put the following content inside:</p>
+    <p>
+        Now that we have an entity, we can create our state. A state is composed by a type defined its shape and its
+        initial value. Let's start by the shape of the state. In this example, it will simply contain a section called
+        "pokemons". A section can be seen as a table in a database. It stores data of the same type.
+    </p>
 
-    <pre><code class="language-typescript">import {{ '{' }} createEntities, Entities } from "@ssougnez/ng-store";
-import {{ '{' }} Pokemon } from "../models/pokemon.model";
+    <p>
+        I usually create the state in a file called "app.state" located in a "states" directory.
+    </p>
+
+    <pre>
+<code class="language-typescript">import {{ '{' }} Pokemon } from "../models/pokemon.model";
 
 export type AppState = {{ '{' }}
     pokemons: Entities&lt;Pokemon>;
-}
-
-export const initial: AppState = {{ '{' }}
-    pokemons: createEntities()
 }</code></pre>
 
-    <p>The type of your state is a simple types containing objets of type "Entities". You can see these properties as
-        the
-        table of your database. In this case, your store as a table called "pokemons" that you'll be able to query. Once
-        you
-        created the type for your state, you have to define its initial state. Most of the time, you'll use the simplest
-        form of `createEntities` in order to initialize the different property of the store. However, you can insert
-        some
-        default data in your store using the first parameter of this function:</p>
+    <p>
+        Along with the shape of the state, we need to defined its initial value. In the same file, add the following
+        lines:
+    </p>
 
-    <pre><code class="language-typescript">export const initial: AppState = {{ '{' }}
-    pokemons: createEntities&lt;Pokemon>([
-        {{ '{' }}
-            id: 1,
-            name: 'Pikachu',
-            type: 'electric'
-        }
-    ])
-}
-</code></pre>
+    <pre>
+<code class="language-typescript">import {{ '{' }} createEntities, Entities } from "@ssougnez/ng-store";
+    
+    export const initial: AppState = {{ '{' }}
+        pokemons: createEntities()
+    }</code></pre>
 
-    <p>The last thing to do to be able to use the store is to import it in your module and configure it:</p>
+    <p>
+        "createEntities" is a function that creates an empty section in your store.
+    </p>
 
-    <pre><code class="language-typescript">@NgModule({{ '{' }}
-    ...
+    <h1 id="configuration">Configuration</h1>
+
+    <p>
+        The last step required to use the start is simply to inject it in your module and configure it to use the
+        default value of your store.
+    </p>
+
+    <p class="message information">
+        As ng-store is not yet standalone compatible, you have to import "NgStoreModule" in the components using it.
+        However, the standalone support is one of the next feature planned.
+    </p>
+
+    <pre>
+<code class="language-typescript">@NgModule({{ '{' }}
     imports: [
       NgStoreModule
     ],
@@ -245,17 +292,19 @@ export const initial: AppState = {{ '{' }}
           initialValue: initial
         } as StoreConfiguration
       }
-    ],
-    ...
+    ]
   })
   export class AppModule {{ '{' }} }
 </code></pre>
 
-    <p>Congratulation, you are now ready to use the store. Note that someday, I might take the time to use schematics to
-        leverage this :-)</p>
+    <p>
+        The configuration object accepts other properties but we'll cover them later in this documentation.
+    </p>
 
-    <h1 id="getting-started">Getting started</h1>
 
+    <h1 id="select-find">Select and find value(s)</h1>
+
+    <!--
     <p>Now that the store is configured, we'll see how to select, add, update and remove data from it. Let's imagine
         this very simple component:</p>
 
@@ -321,4 +370,8 @@ export const initial: AppState = {{ '{' }}
     <pre><code class="language-typescript">public remove() {{ '{' }}
     this.store.removeEntitiesByKeys&lt;Pokemon>(s => s.pokemons, 1);
 }</code></pre>
+
+-->
+
+    <p>The rest is coming soon...</p>
 </main>

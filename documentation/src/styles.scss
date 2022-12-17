@@ -8,6 +8,14 @@
     --primary-darker: #007054;
     --primary-super-dark: #005943;
     --primary-ultra-dark: #003D2E;
+
+    --error: #ff4d4d;
+
+    --information: #17c0eb;
+
+    --success: #3ae374;
+
+    --warning: #ffaf40;
 }
 
 *,
@@ -41,4 +49,37 @@ main {
     max-width: 968px;
     margin: auto;
     padding: 1.5rem;
+}
+
+h1,
+h2,
+h3,
+h4 {
+    margin-top: 3.5rem;
+}
+
+pre {
+    margin: 2rem 0 !important;
+}
+
+.message {
+    border: 1px solid transparent;
+    border-left-width: .25rem;
+    padding: 1rem;
+
+    &.error {
+        border-color: var(--error);
+    }
+
+    &.information {
+        border-color: var(--information);
+    }
+
+    &.success {
+        border-color: var(--success);
+    }
+
+    &.warning {
+        border-color: var(--warning);
+    }
 }
