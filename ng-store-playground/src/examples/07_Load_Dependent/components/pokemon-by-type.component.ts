@@ -7,23 +7,24 @@ import { PokemonService } from '../services/pokemon.service';
 import { AppState } from '../state/app.state';
 
 @Component({
-  selector: 'app-pokemon',
-  templateUrl: './pokemon.component.html',
+  selector: 'app-pokemon-by-type',
+  templateUrl: './pokemon-by-type.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
   imports: [
     JsonPipe,
+    NgFor,
     NgStoreModule
   ]
 })
-export class PokemonComponent {
+export class PokemonByTypeComponent {
 
   /************************************************** BINDINGS **************************************************/
 
   @Input()
   public set id(value: number) {
-    this.query$ = this._pokemonService.loadPokemonById(value);
-    this.pokemon$ = this._store.selectValueByKey(s => s.pokemons, value);
+    this.query$ = this._pokemonService.loadPokemonByType(value);
+    this.pokemons$ = this._store.selectValuesByIndex<Pokemon>(s => s.pokemons, 'typeId', value);
   }
 
   /************************************************** SERVICES **************************************************/
@@ -33,7 +34,11 @@ export class PokemonComponent {
 
   /************************************************** VARIABLES **************************************************/
 
-  public query$!: Observable<Pokemon>;
-  public pokemon$!: Observable<Pokemon | null>;
+  public trackByValue: TrackByFunction<Pokemon> = trackByValue;
+
+  /************************************************** OBSERVABLES **************************************************/
+
+  public query$!: Observable<Pokemon[]>;
+  public pokemons$!: Observable<Pokemon[]>;
 
 }

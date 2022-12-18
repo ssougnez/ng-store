@@ -1,15 +1,15 @@
 <ngs-container [query$]="query$"
-               [data$]="pokemons$"
+               [data$]="types$"
                loaderType="text">
-    <ng-template let-pokemons>
+    <ng-template let-types>
         <div class="flex-row flex-aic gap1"
-             *ngFor="let p of pokemons; trackBy: trackByValue">
-            <div>{{ p.name }}</div>
+             *ngFor="let t of types; trackBy: trackByValue">
+            <div>{{ t.name }}</div>
             <i class="fa fa-solid fa-eye pointer"
-               (click)="selectedId = p.id"></i>
+               (click)="selectedId = t.id"></i>
         </div>
     </ng-template>
 </ngs-container>
 
-<app-pokemon *ngIf="selectedId !== null"
-             [id]="selectedId"></app-pokemon>
+<app-pokemon-by-type *ngIf="selectedId !== null"
+                     [id]="selectedId"></app-pokemon-by-type>

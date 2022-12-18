@@ -1,5 +1,5 @@
 {
-  "name": "@ssougnez/ng-store",
+  "name": "ng-store",
   "version": "0.0.1",
   "scripts": {
     "ng": "ng",

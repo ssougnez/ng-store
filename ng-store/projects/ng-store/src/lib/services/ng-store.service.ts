@@ -918,7 +918,7 @@ export class NgStore<TStore>  {
   public loadEntities<T extends BaseEntity<T['id']>, TDependent extends { [K in keyof OnlyBoolean<TDependent>]?: boolean }, TData extends BaseEntity<TData['id']> = T>(
     url: string | ExternalCall<(T | TData)[]>,
     root: (s: TStore) => Entities<T>,
-    dependentRoot: (s: TStore) => TDependent,
+    dependentRoot: (s: TStore) => TDependent | null,
     stateProperty: BooleanProperties<TDependent>,
     entitiesLoaded: boolean = true,
     force: boolean = false

@@ -2,8 +2,9 @@ import { NgFor, NgIf } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, TrackByFunction } from '@angular/core';
 import { NgStore, NgStoreModule, trackByValue } from 'ng-store';
 import { map, Observable } from 'rxjs';
-import { PokemonComponent } from './components/pokemon.component';
+import { PokemonByTypeComponent } from './components/pokemon-by-type.component';
 import { Pokemon } from './models/pokemon.model';
+import { Type } from './models/type.model';
 import { PokemonService } from './services/pokemon.service';
 import { AppState } from './state/app.state';
 
@@ -17,7 +18,7 @@ import { AppState } from './state/app.state';
     NgIf,
     NgFor,
     NgStoreModule,
-    PokemonComponent
+    PokemonByTypeComponent,
   ]
 })
 export class AppComponent {
@@ -33,9 +34,9 @@ export class AppComponent {
 
   /************************************************** OBSERVABLES **************************************************/
 
-  public query$: Observable<Pokemon[]> = this._pokemonService.loadPokemons();
-  public pokemons$: Observable<Pokemon[]> = this._store.selectValues<Pokemon>(s => s.pokemons).pipe(
-    map(pokemons => pokemons.sort((p1, p2) => p1.name.localeCompare(p2.name)))
+  public query$: Observable<Type[]> = this._pokemonService.loadTypes();
+  public types$: Observable<Type[]> = this._store.selectValues<Type>(s => s.types).pipe(
+    map(types => types.sort((t1, t2) => t1.name.localeCompare(t2.name)))
   );
 
   public trackByValue: TrackByFunction<Pokemon> = trackByValue;

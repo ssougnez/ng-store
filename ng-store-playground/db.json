@@ -146,5 +146,97 @@
             "height": 6.07,
             "weight": 15.2
         }
+    ],
+    "types": [
+        {
+            "id": 1,
+            "name":"water"
+        },
+        {
+            "id": 2,
+            "name":"fire"
+        },
+        {
+            "id": 3,
+            "name":"electric"
+        },
+        {
+            "id": 4,
+            "name":"grass"
+        },
+        {
+            "id": 5,
+            "name":"bug"
+        },
+        {
+            "id": 6,
+            "name":"normal"
+        },
+        {
+            "id": 7,
+            "name":"poison"
+        }
+    ],    
+    "pokemons-with-type": [
+        {
+            "id": 1,
+            "name": "Pikachu",
+            "typeId": 3
+        },
+        {
+            "id": 2,
+            "name": "Bulbasaur",
+            "typeId": 4
+        },
+        {
+            "id": 3,
+            "name": "Charmander",
+            "typeId": 2
+        },
+        {
+            "id": 4,
+            "name": "Vulpix",
+            "typeId": 2
+        },
+        {
+            "id": 5,
+            "name": "Squirtle",
+            "typeId": 1
+        },
+        {
+            "id": 6,
+            "name": "Caterpie",
+            "typeId": 5
+        },
+        {
+            "id": 7,
+            "name": "Weedle",
+            "typeId": 5
+        },
+        {
+            "id": 8,
+            "name": "Pidgey",
+            "typeId": 6
+        },
+        {
+            "id": 9,
+            "name": "Nidoran",
+            "typeId": 7
+        },
+        {
+            "id": 10,
+            "name": "Rattata",
+            "typeId": 6
+        },
+        {
+            "id": 11,
+            "name": "Spearow ",
+            "typeId": 6
+        },
+        {
+            "id": 12,
+            "name": "Ekans ",
+            "typeId": 7
+        }
     ]
 }

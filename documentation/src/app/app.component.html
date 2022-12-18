@@ -1200,6 +1200,246 @@ export class PokemonComponent {{ '{' }}
            target="_blank">this example</a> of the playground.
     </p>
 
+    <p>
+        Let's spice things up a bit by checking how to load dependent data. Say that this time, our web services looks a
+        bit more like what you would expect from a relational REST API. Meaning that instead of having the types of the
+        pokemons as a string property, you have a route returning all the types and the property <code
+              class="language-typescript">type</code> is replaced by the property <code
+              class="language-typescript">typeId</code> which contains the id of the type.
+    </p>
+
+    <p>
+        Moreover, we want to update our main component to display all the pokemon types and then, in another component,
+        a list of all the pokemons of the selected type. Let's start by creating our models.
+    </p>
+
+    <p>
+        The pokemon model:
+    </p>
+
+    <pre>
+<code class="language-typescript">export type Pokemon = BaseEntity&lt;number> & {{ '{' }}
+    name: string;
+    typeId: number;
+}
+</code></pre>
+
+    <p>
+        And the type one:
+    </p>
+
+    <pre>
+<code class="language-typescript">export type Type = BaseEntity&lt;number> & {{ '{' }}
+    name: string;
+}
+</code></pre>
+
+    <p>
+        Now let's update our state:
+    </p>
+
+    <pre>
+<code class="language-typescript">export type AppState = {{ '{' }}
+    pokemons: Entities&lt;Pokemon>;
+    types: Entities&lt;Type>;
+}
+
+export const initial: AppState = {{ '{' }}
+    pokemons: createEntities&lt;Pokemon>([], ['typeId']),
+    types: createEntities&lt;Type>()
+}
+</code></pre>
+
+    <p>
+        Now, it's time to update our service. The first function we'll implement is the one responsible of loading all
+        the types in the store.
+    </p>
+
+    <pre>
+<code class="language-typescript">public loadTypes(): Observable&lt;Type[]> {{ '{' }}
+    return this._store.loadAllEntities('http://localhost:3000/types', s => s.types);
+}
+</code></pre>
+
+    <p>
+        Let's head to our main component to do the necessary changes to display all these types:
+    </p>
+
+    <pre>
+<code class="language-typescript">export class AppComponent {{ '{' }}
+
+  private readonly _pokemonService = inject(PokemonService);
+  private readonly _store: NgStore&ltAppState> = inject(NgStore);
+
+  public selectedId: number | null = null;
+
+  public query$: Observable&lt;Type[]> = this._pokemonService.loadTypes();
+  public types$: Observable&lt;Type[]> = this._store.selectValues&lt;Type>(s => s.types).pipe(
+    map(types => types.sort((t1, t2) => t1.name.localeCompare(t2.name)))
+  );
+
+  public trackByValue: TrackByFunction&lt;Pokemon> = trackByValue;
+
+}
+</code></pre>
+
+    <pre>
+<code class="language-xml">&lt;ngs-container [query$]="query$"
+               [data$]="types$"
+               loaderType="text">
+    &lt;ng-template let-types>
+        &lt;div class="flex-row flex-aic gap1"
+             *ngFor="let t of types; trackBy: trackByValue">
+            &lt;div>{{ '{' + '{' }} t.name }}&lt;/div>
+            &lt;i class="fa fa-solid fa-eye pointer"
+               (click)="selectedId = t.id">&lt;/i>
+        &lt;/div>
+    &lt;/ng-template>
+&lt;/ngs-container>
+
+&lt;app-pokemon-by-type *ngIf="selectedId !== null"
+                     [id]="selectedId">&lt;/app-pokemon-by-type>
+</code></pre>
+
+    <p>
+        Nothing much different so far. The only difference is that the component showing all the pokemons of the
+        selected
+        type is called <code class="language-typescript">app-pokemon-by-type</code> and that's in this component that
+        we'll learn how to load dependent data. What I call dependant data are data that depends on another entity. In
+        this case, we'll load the pokemon depending on their type. The first thing to do in order to load them easily
+        with
+        the store is to add a property to our "type" model:
+    </p>
+
+    <pre>
+<code class="language-typescript">export type Type = BaseEntity&lt;number> & {{ '{' }}
+    name: string;
+
+    pokemonsLoaded: boolean;
+}
+</code></pre>
+
+    <p>
+        The property <code class="language-typescript">pokemonsLoaded</code> will be used by the store to determine
+        whether the pokemons of that type have already been loaded or not and load them accordingly. Currently, this
+        property is not optional and must be defined, so if you happen to insert data in the store manually, simply set
+        it to <code class="language-typescript">false</code> and you'll be fine.
+    </p>
+
+    <p>
+        Now, it's time to update our service to implement a function that will load pokemons from a specific type if
+        they were not loaded yet.
+    </p>
+
+    <pre>
+<code class="language-typescript">import {{ '{' }} findStoreValueByKey, NgStore } from "@ssougnez/ng-store";
+    
+public loadPokemonByType(id: number): Observable&lt;Pokemon[]> {{ '{' }}
+    return this._store.loadEntities&lt;Pokemon, Type>(
+        `http://localhost:3000/pokemons-with-type?typeId=${{ '{' }}id}`, 
+        s => s.pokemons,
+        findStoreValueByKey(s => s.types, id),
+        'pokemonsLoaded',
+        false
+    );
+}
+</code></pre>
+
+    <p>
+        So basically, we use the <code class="language-typescript">loadEntities</code> function to load entities based
+        on the property of another one. The two first parameters are the same than for the others functions, what's
+        interesting is the third and fourth one. The third one allows you to find the depending entity. Most of the
+        time, you'll use the utility function <code class="language-typescript">findStoreValueByKey</code> to do so.
+        Simply pass it the section of the store where you want to find the depending entity and its id. Then, the fourth
+        parameter is simply the name of the property to use in order to define whether the entities have been loaded or
+        not. This has to be passed as a string to allow the store to update this property as he wishes to (which means
+        that you should never update the value of this property by yourself). The last parameter is the same as for the
+        others functions and determines whether entities are completely or partially loaded (in that case, they are only
+        partially loaded).
+    </p>
+
+    <p>
+        Now that we have this, we can implement the component showing the pokemons of a certain type:
+    </p>
+
+    <pre>
+<code class="language-typescript">export class PokemonByTypeComponent {{ '{' }}
+
+  @Input()
+  public set id(value: number) {{ '{' }}
+    this.query$ = this._pokemonService.loadPokemonByType(value);
+    this.pokemons$ = this._store.selectValuesByIndex&lt;Pokemon>(s => s.pokemons, 'typeId', value);
+  }
+
+  private readonly _pokemonService = inject(PokemonService);
+  private readonly _store: NgStore&lt;AppState> = inject(NgStore);
+
+  public trackByValue: TrackByFunction&lt;Pokemon> = trackByValue;
+
+  public query$!: Observable&lt;Pokemon[]>;
+  public pokemons$!: Observable&lt;Pokemon[]>;
+
+}
+</code></pre>
+
+    <p>
+        And the template:
+    </p>
+
+    <pre>
+<code class="language-html">&lt;ngs-container [query$]="query$"
+               [data$]="pokemons$"
+               loaderType="text">
+    &lt;ng-template let-pokemons>
+        &lt;div *ngFor="let p of pokemons; trackBy: trackByValue">{{ '{' + '{' }} p.name }}&lt;/div>
+    &lt;/ng-template>
+&lt;/ngs-container>
+</code></pre>
+
+    <p>
+        And that's it, folks! If you run your application, you'll have:
+    </p>
+
+    <div class="img">
+        <img src="assets/img/dependent-01.png" />
+    </div>
+
+    <p>
+        And when clicking on the eye next to a type:
+    </p>
+
+    <div class="img">
+        <img src="assets/img/dependent-02.png" />
+    </div>
+
+    <p>
+        Like for the other functions, it's important to note that:
+    </p>
+
+    <ul>
+        <li>
+            Entities are only loaded if they were not yet loaded. You can bypass this behavior by using the
+            <code class="language-typescript">force</code> parameter.
+        </li>
+        <li>
+            If multiple components try to load the same dependent data at the same moment, only one call is made.
+        </li>
+    </ul>
+
+    <p class="message information">
+        You can find the code of this section in <a
+           href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/07_Load_Dependent"
+           target="_blank">this example</a> of the playground.
+    </p>
+
+    <p>
+        There is one more function that you could use to load data in the store <code
+              class="language-typescript">loadEntitiesOnce</code>. Basically, this function loads entities only once.
+        The store uses the URL of the REST API to know whether the entities have already been loaded or not. This
+        function is pretty straightforward so I won't show an example here but if you need it, you can still create an
+        issue and I'll update the documentation.
+    </p>
+
     <h1 id="post">Post</h1>
 
     <p>
