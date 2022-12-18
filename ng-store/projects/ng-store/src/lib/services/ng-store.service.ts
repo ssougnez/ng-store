@@ -852,7 +852,7 @@ export class NgStore<TStore>  {
             catchError(err => {
               this.update(d => { root(d).loaded = state; });
 
-              return throwError(() => new Error(err));
+              return throwError(() => err);
             }),
             finalize(() => {
               this.update(d => this._setEntitiesStates(d, root, null, false, null, null));
@@ -942,7 +942,7 @@ export class NgStore<TStore>  {
             catchError(err => {
               dependentRoot && this.update(d => { (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = state; });
 
-              return throwError(() => new Error(err));
+              return throwError(() => err);
             }),
             finalize(() => {
               this.update(d => this._setEntitiesStates(d, root, null, false, null, null));
@@ -991,7 +991,7 @@ export class NgStore<TStore>  {
             catchError(err => {
               this.update(d => { (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = state; });
 
-              return throwError(() => new Error(err));
+              return throwError(() => err);
             }),
             finalize(() => {
               this.update(d => this._setEntitiesStates(d, root, null, false, null, null));

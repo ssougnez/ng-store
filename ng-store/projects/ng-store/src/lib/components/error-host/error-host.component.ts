@@ -4,7 +4,7 @@ import { NG_STORE_CONFIG } from '../../tokens';
 
 @Component({
   selector: 'ngs-error-host',
-  template: '<ng-container #host></ng-container><div *ngIf="!!config?.errorComponent" [innerHTML]="error"></div>',
+  template: '<ng-container #host></ng-container>',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NgStoreErrorHostComponent implements OnInit {

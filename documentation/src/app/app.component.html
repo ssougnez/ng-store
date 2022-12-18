@@ -322,7 +322,8 @@ export type AppState = {{ '{' }}
       {{ '{' }}
         provide: NG_STORE_CONFIG,
         useValue: {{ '{' }}
-          initialValue: initial
+          initialValue: initial,
+          httpClientType: null
         } as StoreConfiguration
       }
     ]
@@ -332,6 +333,12 @@ export type AppState = {{ '{' }}
 
     <p>
         The configuration object accepts other properties but we'll cover them later in this documentation.
+    </p>
+
+    <p>
+        ng-store supports loading data asynchronously using HTTP requests. To use this feature, you can either not
+        define the <code class="language-typescript">httpClientType</code> to use the default HTTP client of Angular or
+        define it on a custom class (more on that later).
     </p>
 
     <h1 id="find">Find functions</h1>
@@ -516,7 +523,7 @@ public normalEntities: Entity&lt;Pokemon>[] = this._store.findEntitiesBy(s => s.
     <p class="message information">
         You can find the code of this section in <a
            href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/01_Find"
-           target="_blank">the first example</a> of the playground.
+           target="_blank">this example</a> of the playground.
     </p>
 
     <h1 id="select">Select functions</h1>
@@ -604,7 +611,7 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
     <p class="message information">
         You can find the code of this section in <a
            href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/02_Select"
-           target="_blank">the second example</a> of the playground.
+           target="_blank">this example</a> of the playground.
     </p>
 
     <h1 id="indexes">Indexes</h1>
@@ -654,7 +661,7 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
     <p class="message information">
         You can find the code of this section in <a
            href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/03_Indexes"
-           target="_blank">the third example</a> of the playground.
+           target="_blank">this example</a> of the playground.
     </p>
 
     <h1 id="upsert">Upsert</h1>
@@ -813,7 +820,7 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
     <p class="message information">
         You can find the code of this section in <a
            href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/04_Upsert"
-           target="_blank">the fourth example</a> of the playground.
+           target="_blank">this example</a> of the playground.
     </p>
 
     <h1 id="remove">Remove</h1>
@@ -832,7 +839,7 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
     </p>
 
     <pre>
-<code class="language-typescript">public updateExisting(): void {{ '{' }}
+<code class="language-typescript">public remove(): void {{ '{' }}
     this._store.removeValuesByKeys&lt;Pokemon>(s => s.pokemons, 1, 2);
 }</code></pre>
 
@@ -841,35 +848,357 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
     </p>
 
     <pre>
-<code class="language-typescript">public updateExisting(): void {{ '{' }}
+<code class="language-typescript">public removeNormal(): void {{ '{' }}
     this._store.removeValuesBy(s => s.pokemons, p => p.type === 'normal');
 }</code></pre>
 
     <p class="message information">
         You can find the code of this section in <a
            href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/05_Remove"
-           target="_blank">the sixth example</a> of the playground.
+           target="_blank">this example</a> of the playground.
     </p>
 
     <h1 id="load">Load</h1>
 
     <p>
-        So far, we saw how to use the store in a synchronous way, however, in a real life scenario, the data in the
-        store gets most of the time loaded using REST API in an asynchronous way. You could do it with what we saw above
-        but ng-store comes with support for asynchronous loading of data. It also proposes some components to
+        So far, we saw how to use the store in a synchronous way, however, in a real life scenario, data in the
+        store get most of the time loaded using REST API in an asynchronous way. You could do it with what we saw above
+        but ng-store comes with support for asynchronous loading of data. It also provides some components to
         simplify the UI. Let's start with a simple use case:
     </p>
 
     <ul>
         <li>Pokemons are loaded using a call to a REST API.</li>
-        <li>We want to load all the pokemons but not all of their properties, to save band-width (partial load).</li>
-        <li>We want a component to display a pokemon based on its ID (all its properties).</li>
+        <li>We want to load all the pokemons but not all of their properties, to save bandwidth (partial load).</li>
+        <li>We want a component to display a pokemon based on its id (all its properties).</li>
     </ul>
 
     <p>
         For those who want to run the examples from the playground, I'm using the "json-server" library to create a fake
         web service. You can start it by running the command <code class="language-typescript">yarn json</code> in
-        the playground directory.
+        the playground directory. All the call have a latency of one second in order to see what happens during the data
+        loading.
+    </p>
+
+    <p>
+        The first thing to do to be able to use HTTP calls is to configure "ng-store" in that way:
+    </p>
+
+    <pre>
+<code class="language-typescript">@NgModule({{ '{' }}
+    imports: [
+        NgStoreModule,
+        HttpClientModule
+    ],
+    providers: [
+        {{ '{' }}
+            provide: NG_STORE_CONFIG,
+            useValue: {{ '{' }}
+                initialValue: initial
+            } as StoreConfiguration
+        }
+    ]
+})
+export class AppModule {{ '{' }} }
+</code></pre>
+
+    <p>
+        We removed the "httpClientType" property to instruct Angular to use the default <code
+              class="language-typescript">HttpClient</code> and we also imported the <code
+              class="language-typescript">HttpClientModule</code>.
+    </p>
+
+    <p>
+        Now, we're going to create a <code class="language-typescript">PokemonService</code> to do the heavy lifting of
+        loading data:
+    </p>
+
+    <pre>
+<code class="language-typescript">@Injectable({{ '{' }}
+    providedIn: 'root'
+})
+export class PokemonService {{ '{' }}
+
+    private _store: NgStore&lt;AppState> = inject(NgStore);
+
+}</code></pre>
+
+    <p>
+        As we saw earlier, you could make the HTTP call by yourself and handle the loading, error and success states,
+        but
+        "ng-store" provides a component called <code class="language-typescript">ngs-container</code> to help you with
+        that. Here, we'll see the most basic usage of this component, but you can find more information about it <a
+           href="#ngs-container">later in this documentation</a>.
+    </p>
+
+    <p>
+        This component works by using two observables:
+    </p>
+
+    <ul>
+        <li><strong>query$</strong>: Used to perform the HTTP call.</li>
+        <li><strong>data$</strong>: Retrieves the data you want to use in your template from the store.</li>
+    </ul>
+
+    <p>
+        In our case, we'll start by implementing the function used to fetch data using a REST call in our service:
+    </p>
+
+    <pre>
+<code class="language-typescript">public loadPokemons(): Observable&lt;Pokemon[]> {{ '{' }}
+    return this._store.loadAllEntities('http://localhost:3000/pokemons', s => s.pokemons, false);
+}</code></pre>
+
+    <p>
+        The <code class="language-typescript">loadAllEntities</code> function must be used to load all the entities from
+        the server and put them in a store section. This function expects at most four parameters:
+    </p>
+
+    <ul>
+        <li>
+            <strong>url</strong>: URL to call to retrieve the data.
+        </li>
+        <li>
+            <strong>root</strong>: predicate used to select the section of the store that will store the fetched data.
+        </li>
+        <li>
+            <strong>entityLoaded</strong>: Define whether the loaded entities are complete or not (more on that a bit
+            later).
+        </li>
+        <li>
+            <strong>force</strong>: When data are loaded and put in the store, subsequents call to <code
+                  class="language-typescript">loadAllEntities</code> for the same section will return them and not call
+            the REST API again. However, you can force the store to refetch the data by setting this parameter to <code
+                  class="language-typescript">true</code>.
+        </li>
+    </ul>
+
+    <p>
+        In this case, we use this function to call the web service at the specified URL and store the values returned by
+        it in the "pokemons" section of the store. Moreover, as this route only returns <strong>some</strong> properties
+        of
+        the pokemons, we set the third parameter to <strong>false</strong> in order to indicate to the store that
+        entities are loaded but not completely (we'll use that fact a bit later).
+    </p>
+
+    <p>
+        Now that we have this function, we can update the code of our component like so:
+    </p>
+
+    <pre>
+<code class="language-typescript">export class AppComponent {{ '{' }}
+
+  private readonly _pokemonService = inject(PokemonService);
+  private readonly _store: NgStore&lt;AppState> = inject(NgStore);
+
+  public selectedId: number | null = null;
+
+  public query$: Observable&lt;Pokemon[]> = this._pokemonService.loadPokemons();
+  public pokemons$: Observable&lt;Pokemon[]> = this._store.selectValues&lt;Pokemon>(s => s.pokemons).pipe(
+    map(pokemons => pokemons.sort((p1, p2) => p1.name.localeCompare(p2.name)))
+  );
+
+  public trackByValue: TrackByFunction&lt;Pokemon> = trackByValue;
+
+}
+</code></pre>
+
+    <p>
+        We simply set the <code class="language-typescript">query$</code> observable on the value returned by our
+        service function and the <code class="language-typescript">data$</code> on a selection from the store. We also
+        use the <code class="language-typescript">map</code> operator to sort the result based on the pokemons' name.
+        Once we have these observables, we can use them in the template along with the <code
+              class="language-typescript">ngs-container</code>. <code class="language-typescript">selectedId</code>
+        variable will be used to display a pokemon in another component.
+    </p>
+
+    <pre>
+<code class="language-xml">&lt;ngs-container [query$]="query$"
+               [data$]="pokemons$"
+               loaderType="text">
+    &lt;ng-template let-pokemons>
+        &lt;div class="flex-row flex-aic gap1"
+             *ngFor="let p of pokemons; trackBy: trackByValue">
+            &lt;div>{{ '{' + '{' }} p.name }}&lt;/div>
+            &lt;i class="fa fa-solid fa-eye pointer"
+               (click)="selectedId = p.id">&lt;/i>
+        &lt;/div>
+    &lt;/ng-template>
+&lt;/ngs-container>
+</code></pre>
+
+    <p>
+        Basically, the <code class="language-typescript">ngs-container</code> expects the two observables we mentionned,
+        instantiates a <code class="language-typescript">ng-template</code> and passes the values emitted by <code
+              class="language-typescript">data$</code> observable in its implicit variable. Here, we store these data
+        in the variable <code class="language-typescript">pokemons</code> then we use it to display all the pokemons. We
+        also display a small icon that sets the value of <code class="language-typescript">selectedId</code> on the
+        pokemon id.
+    </p>
+
+    <p>
+        One of the advantage of this component is that it handles loading and error states. Indeed, if the HTTP call
+        fails, the container component catches it and can do something with the error. By default, it simply displays
+        it. However, you can configure the container to display the error in a custom way. As for the loading
+        indicator, the json server is configured to have a latency of one second and during this second, you can see
+        that the <code class="language-typescript">ngs-container</code> displays "<em>Loading...</em>". There is
+        different possibilities for the loading indicator format but here, we set the property <code
+              class="language-typescript">loaderType</code> on <code class="language-typescript">text</code> to simply
+        display a loading sentence. We'll see in the <a href="#ngs-container">ngs-container</a> chapter how to customize
+        this loading indicator. Let's confirm all of this by running our application with the JSON server turned off:
+    </p>
+
+    <div class="img">
+        <img src="assets/img/container-error.png" />
+    </div>
+
+    <p>
+        The container correctly caught the error and displayed it. Now, let's start the JSON server and refresh our
+        page.
+        At first, we can see:
+    </p>
+
+    <div class="img">
+        <img src="assets/img/container-loading-01.png" />
+    </div>
+
+    <p>
+        Then after one second:
+    </p>
+
+    <div class="img">
+        <img src="assets/img/container-loading-02.png" />
+    </div>
+
+    <p>
+        So, as you can see, the <code class="language-typescript">ngs-container</code> really handles everything you
+        need to fetch the data and display what needs to be displayed depending on the current state of the request.
+    </p>
+
+    <p>
+        We'll go a little further by creating a component that will receive the id of a pokemon in input and display
+        all its data. As we said earlier, the call we used in the main component only loaded some of the properties.
+        Now, we'll see how to load all the properties of the pokemon with the specified id. First, let's add a method
+        to our service in order to load a pokemon based on its id.
+    </p>
+
+    <pre>
+<code class="language-typescript">public loadPokemonById(id: number): Observable&lt;Pokemon> {{ '{' }}
+    return this._store.loadEntityByKey(`http://localhost:3000/pokemons-full/${{ '{' }}id}`, s => s.pokemons, id);
+}
+</code></pre>
+
+    <p class="message information">
+        This route fetches a pokemon based on its id and returns <strong>all its properties</strong>.
+    </p>
+
+    <p>
+        <code class="language-typescript">loadEntityByKey</code> calls a route in order to load an entity if it is not
+        yet in the store or if it is in the store but is flagged as not completely loaded, which is the case here.
+        Indeed, we called <code class="language-typescript">loadAllEntities</code> by passing <code
+              class="language-typescript">false</code> as the third parameter, indicating this way that loaded entities
+        were not complete. Note that <code class="language-typescript">loadEntityByKey</code> also set the entity it
+        loads as completely loaded (except if you pass <code class="language-typescript">false</code> in its fourth
+        parameter), meaning that calling twice this function for the same entity will call the REST API
+        only once. Moreover, and that's the case for all loading functions of "ng-store", if multiple components try to
+        load an entity at the exact same time, only one call is made but the entity will be available for all
+        components.
+    </p>
+
+    <p>
+        Now that we have this function, we can use it in a new component:
+    </p>
+
+    <pre>
+<code class="language-typescript">@Component({{ '{' }}
+  selector: 'app-pokemon',
+  templateUrl: './pokemon.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
+  imports: [
+    JsonPipe,
+    NgStoreModule
+  ]
+})
+export class PokemonComponent {{ '{' }}
+
+  @Input()
+  public set id(value: number) {{ '{' }}
+    this.query$ = this._pokemonService.loadPokemonById(value);
+    this.pokemon$ = this._store.selectValueByKey(s => s.pokemons, value);
+  }
+
+  private readonly _pokemonService = inject(PokemonService);
+  private readonly _store: NgStore&lt;AppState> = inject(NgStore);
+
+  public query$!: Observable&lt;Pokemon>;
+  public pokemon$!: Observable&lt;Pokemon | null>;
+
+}
+</code></pre>
+
+    <p>
+        The idea here is the same than for the first component except that the <code
+              class="language-typescript">query$</code> and <code class="language-typescript">data$</code> observables
+        are defined in the setter of the id input. Now we can use them in the template:
+    </p>
+
+    <pre>
+<code class="language-xml">&lt;ngs-container [query$]="query$"
+    [data$]="pokemon$"
+    loaderType="text">
+    &lt;ng-template let-pokemon>
+        &lt;pre>{{ '{' + '{' }} pokemon | json }}&lt;/pre>
+    &lt;/ng-template>
+&lt;/ngs-container>
+</code></pre>
+
+    <p>
+        The only thing left to do is adding the following line in the template of the main component:
+    </p>
+
+    <pre>
+<code class="language-xml">&lt;app-pokemon *ngIf="selectedId !== null"
+             [id]="selectedId">&lt;/app-pokemon>
+</code></pre>
+
+    <p>
+        And that's it. Let's have a look at the network tab of the console in order to see what happens in terms of HTTP
+        calls. First, when the application starts:
+    </p>
+
+    <div class="img">
+        <img src="assets/img/load-console-01.png" />
+    </div>
+
+    <p>
+        Now, click on the eye icon of the first pokemon:
+    </p>
+
+    <div class="img">
+        <img src="assets/img/load-console-02.png" />
+    </div>
+
+    <p>
+        We see that the call to the route loading all the pokemon properties is correctly executed. Now, let's click on
+        the eye of the second pokemon then click again on the eye of the first pokemon:
+    </p>
+
+    <div class="img">
+        <img src="assets/img/load-console-03.png" />
+    </div>
+
+    <p>
+        As you can see, the call for the second pokemon is correctly done, however, the call for the first pokemon is
+        not done another time. Indeed, as the entity is in the store and is completely loaded, it does not get loaded
+        once again. Note that you can force the query (to refresh data maybe) by passing <code
+              class="language-typescript">true</code> as the fifth parameter.
+    </p>
+
+    <p class="message information">
+        You can find the code of this section in <a
+           href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/06_Load"
+           target="_blank">this example</a> of the playground.
     </p>
 
     <h1 id="post">Post</h1>
@@ -877,6 +1206,7 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
     <p>
         Coming soon...
     </p>
+
     <h1 id="put">Put</h1>
 
     <p>
