@@ -1,0 +1,15 @@
+.container {
+    position: fixed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    right: 1rem;
+    bottom: 1rem;
+    width: 3rem;
+    height: 3rem;
+    background-color: var(--primary);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
