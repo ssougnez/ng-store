@@ -1,4 +1,4 @@
-import { BaseEntity } from "ng-store";
+import { BaseEntity } from "@ssougnez/ng-store";
 
 export type Pokemon = BaseEntity<number> & {
     name: string;

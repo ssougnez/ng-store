@@ -1,6 +1,6 @@
 import { AsyncPipe, JsonPipe, NgFor } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, Input, TrackByFunction } from '@angular/core';
-import { NgStore, NgStoreModule, trackByValue } from 'ng-store';
+import { NgStore, NgStoreModule, trackByValue } from '@ssougnez/ng-store';
 import { map, Observable } from 'rxjs';
 import { Pokemon } from '../models/pokemon.model';
 import { PokemonService } from '../services/pokemon.service';

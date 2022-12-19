@@ -1,4 +1,4 @@
-import { createEntities, Entities } from "ng-store";
+import { createEntities, Entities } from "@ssougnez/ng-store";
 import { Pokemon } from "../models/pokemon.model";
 import { Type } from "../models/type.model";
 

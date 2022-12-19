@@ -1,4 +1,4 @@
-import { BaseEntity } from "ng-store";
+import { BaseEntity } from "@ssougnez/ng-store";
 
 export type Type = BaseEntity<number> & {
     name: string;

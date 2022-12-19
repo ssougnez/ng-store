@@ -1,5 +1,5 @@
 import { inject, Injectable } from "@angular/core";
-import { findStoreValueByKey, NgStore } from "ng-store";
+import { findStoreValueByKey, NgStore } from "@ssougnez/ng-store";
 import { Observable } from "rxjs";
 import { Pokemon } from "../models/pokemon.model";
 import { Type } from "../models/type.model";

@@ -1,0 +1,24 @@
+<form [formGroup]="form"
+      (ngSubmit)="add()">
+    <div>
+        <label>
+            Name: <input type="text"
+                   formControlName="name">
+        </label>
+    </div>
+    <div>
+        <label>
+            Type: <select formControlName="type">
+                <option value="water">Water</option>
+                <option value="fire">Fire</option>
+                <option value="electric">Electric</option>
+                <option value="grass">Grass</option>
+                <option value="bug">Bug</option>
+                <option value="normal">Normal</option>
+                <option value="poison">Poison</option>
+            </select>
+        </label>
+    </div>
+    <button type="submit"
+            [disabled]="form.valid === false || (adding$ | async) === true">Create</button>
+</form>
