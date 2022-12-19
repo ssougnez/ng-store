@@ -79,9 +79,7 @@
     {
       "id": 3,
       "name": "Charmander",
-      "type": "fire",
-      "height": 2,
-      "weight": 18.7
+      "type": "fire"
     },
     {
       "id": 4,
@@ -152,9 +150,9 @@
       "id": 13
     },
     {
-      "name": "jjjj",
-      "type": "normal",
-      "id": 14
+      "id": 14,
+      "name": "jjjj fffftughbnfdsddd !",
+      "type": "normal"
     },
     {
       "name": "teeeeeest",
@@ -170,6 +168,16 @@
       "name": "fdsqfdsqfqs",
       "type": "grass",
       "id": 17
+    },
+    {
+      "id": 18,
+      "name": "hello !",
+      "type": "fire"
+    },
+    {
+      "id": 19,
+      "name": "yop !",
+      "type": "normal"
     }
   ],
   "types": [

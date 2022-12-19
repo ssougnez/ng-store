@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Inject, inject, Injectable } from '@angular/core';
+import { ChangeDetectorRef, Inject, inject, Injectable, NgZone } from '@angular/core';
 import { enableMapSet, produce } from 'immer';
 import { BehaviorSubject, catchError, distinctUntilChanged, finalize, map, Observable, of, share, tap, throwError } from 'rxjs';
 import { StoreConfiguration } from '../models';
@@ -167,7 +167,7 @@ export class NgStore<TStore>  {
       this._http = inject(_config.httpClientType ?? HttpClient);
     }
 
-    this._store = new BehaviorSubject(produce(_config.initialValue as TStore, draft => draft));    
+    this._store = new BehaviorSubject(produce(_config.initialValue as TStore, draft => draft));
     this._root = this._store.asObservable();
   }
 
@@ -1100,7 +1100,7 @@ export class NgStore<TStore>  {
             this.update(d => {
               this._setEntitiesStates(d, root, entity === null ? false : null, null, entity !== null ? false : null, null);
               this._setEntityStates(d, root, key, state, null, false, null);
-            })
+            });
           })
         );
     });
