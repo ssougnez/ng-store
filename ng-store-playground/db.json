@@ -155,6 +155,21 @@
       "name": "jjjj",
       "type": "normal",
       "id": 14
+    },
+    {
+      "name": "teeeeeest",
+      "type": "water",
+      "id": 15
+    },
+    {
+      "name": "gfdgfdgfdgfd",
+      "type": "normal",
+      "id": 16
+    },
+    {
+      "name": "fdsqfdsqfqs",
+      "type": "grass",
+      "id": 17
     }
   ],
   "types": [

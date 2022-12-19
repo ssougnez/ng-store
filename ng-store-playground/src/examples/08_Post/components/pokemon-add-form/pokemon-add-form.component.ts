@@ -2,7 +2,7 @@ import { AsyncPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NgStore } from '@ssougnez/ng-store';
-import { map, Observable } from 'rxjs';
+import { finalize, map, Observable } from 'rxjs';
 import { PokemonCreationData, PokemonType } from '../../models/pokemon.model';
 import { PokemonService } from '../../services/pokemon.service';
 import { AppState } from '../../state/app.state';
@@ -36,7 +36,6 @@ export class PokemonAddFormComponent implements OnInit {
 
   /************************************************** OBSERVABLES **************************************************/
 
-  public adding$: Observable<boolean> = this._store.select(s => s.pokemons).pipe(map(e => e.adding));
 
   /************************************************** LIFE CYCLE **************************************************/
 
@@ -49,18 +48,20 @@ export class PokemonAddFormComponent implements OnInit {
 
   /************************************************** PUBLIC **************************************************/
 
-  /** */
-  public add() {
-    const data: PokemonCreationData = {
-      name: this.form.value.name!,
-      type: this.form.value.type!
-    };
+public adding$: Observable<boolean> = this._store.select(s => s.pokemons).pipe(map(e => e.adding));
 
-    this._pokemonService
-      .addPokemon(data)
-      .subscribe({
-        next: () => this.form.reset({ name: null, type: null }),
-        error: err => console.log(err)
-      })
-  }
+/** */
+public add() {
+  const data: PokemonCreationData = {
+    name: this.form.value.name!,
+    type: this.form.value.type!
+  };
+
+  this._pokemonService
+    .addPokemon(data)
+    .subscribe({
+      next: () => this.form.reset({ name: null, type: null }),
+      error: err => console.log(err)
+    })
+}
 }

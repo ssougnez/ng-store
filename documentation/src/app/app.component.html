@@ -1443,7 +1443,329 @@ public loadPokemonByType(id: number): Observable&lt;Pokemon[]> {{ '{' }}
     <h1 id="post">Post</h1>
 
     <p>
-        Coming soon...
+        Now that we saw how to load data with the store, we are going to see how to create them. Let's start by creating
+        the following models:
+    </p>
+
+    <pre>
+<code class="language-typescript">export type PokemonType = 'water' | 'fire' | 'electric' | 'grass' | 'bug' | 'normal' | 'poison';
+
+export type Pokemon = BaseEntity&lt;number> & {{ '{' }}
+    name: string;
+    type: PokemonType;
+}
+
+export type PokemonCreationData = {{ '{' }}
+    name: string;
+    type: PokemonType;
+}
+</code></pre>
+
+    <p>
+        We defined two types:
+    </p>
+
+    <ul>
+        <li><strong>Pokemon</strong>: The type of our entities.</li>
+        <li><strong>PokemonCreationData</strong>: Type of the data sent to the server to create a new pokemon.</li>
+    </ul>
+
+    <p>
+        In the service, we'll have one function used to retrieve all the pokemons:
+    </p>
+
+    <pre>
+<code class="language-typescript">export class PokemonService {{ '{' }}
+
+    private _store: NgStore&ltAppState> = inject(NgStore);
+
+    public loadPokemons(): Observable&ltPokemon[]> {{ '{' }}
+        return this._store.loadAllEntities('http://localhost:3000/pokemons-full', s => s.pokemons);
+    }
+
+}
+</code></pre>
+
+    <p>
+        Finally, the component simply displays all the pokemons:
+    </p>
+
+    <pre>
+<code class="language-typescript">export class AppComponent {{ '{' }}
+
+  private readonly _pokemonService = inject(PokemonService);
+  private readonly _store: NgStore&lt;AppState> = inject(NgStore);
+
+  public trackByValue: TrackByFunction&lt;Pokemon> = trackByValue;
+
+  public query$: Observable&lt;Pokemon[]> = this._pokemonService.loadPokemons();
+  public data$: Observable&lt;Pokemon[]> = this._store.selectValues&lt;Pokemon>(s => s.pokemons).pipe(
+    map(pokemons => pokemons.sort((p1, p2) => p1.name.localeCompare(p2.name)))
+  );
+
+}
+</code></pre>
+
+    <pre>
+<code class="language-xml">&lt;ngs-container [query$]="query$"
+               [data$]="data$"
+               loaderType="text">
+    &lt;ng-template let-pokemons>
+        &lt;div class="flex-row gap1">
+            &lt;div class="flex-1">
+                &lt;div *ngFor="let p of pokemons; trackBy: trackByValue">
+                    {{ '{' + '{' }} p.name }}
+                &lt;/div>
+            &lt;/div>
+            &lt;div class="flex-1">
+                &lt;app-pokemon-add-form>&lt;/app-pokemon-add-form>
+            &lt;/div>
+        &lt;/div>
+    &lt;/ng-template>
+&lt;/ngs-container>
+</code></pre>
+
+    <p>
+        So far, nothing new. However, we put a component called <code class="language-xml">app-pokemon-add-form</code>
+        that we'll use to create new pokemons. Note that the goal is to automatically refresh the list of pokemons upon
+        creation. Here is a first version of the code of this component:
+    </p>
+
+    <pre>
+<code class="language-typescript">type FormData = {{ '{' }}
+  name: FormControl&lt;string | null>;
+  type: FormControl&lt;PokemonType | null>;
+}
+
+@Component({{ '{' }}
+  selector: 'app-pokemon-add-form',
+  templateUrl: './pokemon-add-form.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  standalone: true,
+  imports: [
+    AsyncPipe,
+    ReactiveFormsModule
+  ]
+})
+export class PokemonAddFormComponent implements OnInit {{ '{' }}
+
+  private readonly _fb = inject(FormBuilder);
+  private readonly _pokemonService = inject(PokemonService);
+  private readonly _store: NgStore&lt;AppState> = inject(NgStore);
+
+  public form!: FormGroup&lt;FormData>;
+
+  public ngOnInit(): void {{ '{' }}
+    this.form = this._fb.group({{ '{' }}
+      'name': new FormControl&lt;string | null>(null, Validators.required),
+      'type': new FormControl&lt;PokemonType | null>(null, Validators.required),
+    });
+  }
+
+  public add() {{ '{' }}
+
+  }
+}
+</code></pre>
+
+    <pre>
+<code class="language-xml">&lt;form [formGroup]="form"
+      (ngSubmit)="add()">
+    &lt;div>
+        &lt;label>
+            Name: &lt;input type="text"
+                   formControlName="name">
+        &lt;/label>
+    &lt;/div>
+    &lt;div>
+        &lt;label>
+            Type: &lt;select formControlName="type">
+                &lt;option value="water">Water&lt;/option>
+                &lt;option value="fire">Fire&lt;/option>
+                &lt;option value="electric">Electric&lt;/option>
+                &lt;option value="grass">Grass&lt;/option>
+                &lt;option value="bug">Bug&lt;/option>
+                &lt;option value="normal">Normal&lt;/option>
+                &lt;option value="poison">Poison&lt;/option>
+            &lt;/select>
+        &lt;/label>
+    &lt;/div>
+    &lt;button type="submit"
+            [disabled]="form.valid === false">Create&lt;/button>
+&lt;/form>
+</code></pre>
+
+    <p>
+        Basically, we created a simple form using reactive forms and bound the submit event of the form to the <code
+              class="language-typescript">add</code> function. Before implementing this function, we'll create the <code
+              class="language-xml">addPokemon</code> function in the service that will use the store to perform the
+        creation.
+    </p>
+
+    <pre>
+<code class="language-typescript">public addPokemon(data: PokemonCreationData): Observable&lt;Pokemon> {{ '{' }}
+    return this._store.postEntity&lt;Pokemon>('http://localhost:3000/pokemons-full', s => s.pokemons, data);
+}
+</code></pre>
+
+    <p>
+        Creating a new entity with the store is really easy, you just have to call the <code
+              class="language-typescript">postEntity</code> function with the following parameters:
+    </p>
+
+    <ul>
+        <li><strong>url</strong>: POST URL to call to create the entity.</li>
+        <li><strong>root</strong>: Selector used to update the adding state of the entity list (more on that a bit
+            later).</li>
+        <li><strong>data</strong>: Payload sent to the server to create the entity.</li>
+    </ul>
+
+    <p>
+        Now, it's just a matter of calling this function in our component:
+    </p>
+
+    <pre>
+<code class="language-typescript">public add() {{ '{' }}
+  const data: PokemonCreationData = {{ '{' }}
+    name: this.form.value.name!,
+    type: this.form.value.type!
+  };
+
+  this._pokemonService
+    .addPokemon(data)
+    .subscribe({{ '{' }}
+      next: () => this.form.reset({{ '{' }} name: null, type: null }),
+      error: err => console.log(err)
+    })
+}
+</code></pre>
+
+    <p>
+        If you were to test the component, you'd notice that it works... ish... Two details are a bit annoying
+        here:
+    </p>
+
+    <ul>
+        <li>The pokemon gets created but a refresh is required to actually see it.</li>
+        <li>The button is enabled during the REST call, meaning that a user could potentially clicks multiple times on
+            the button and therefore create the pokemon more than once.</li>
+    </ul>
+
+    <p>
+        The first point is really easy to solve with the store. You just need to update the function in the service like
+        so:
+    </p>
+
+    <pre>
+<code class="language-typescript">public addPokemon(data: PokemonCreationData): Observable&lt;Pokemon> {{ '{' }}
+    return this._store
+        .postEntity&lt;Pokemon>('http://localhost:3000/pokemons-full', s => s.pokemons, data)
+        .pipe(
+            tap(pokemon => this._store.upsertValue(s => s.pokemons, pokemon))
+        );
+}
+</code></pre>
+
+    <p>
+        Basically, we just piped the observable returned by the function to add the value emitted in the "pokemons" section
+        of the store. Of course, this will only work if, like JSON server, your REST API returns the created entity. If
+        not, you'll have to find another way to refresh your store. Here are some ideas:
+    </p>
+
+    <ul>
+        <li>
+            If you web service does not return any interesting value (which it shouldn't), pipe the call to <code
+                  class="language-typescript">postEntity</code> with a <code
+                  class="language-typescript">switchMap</code> to <code
+                  class="language-typescript">loadAllEntities</code> with the <code
+                  class="language-typescript">force</code> flag to <code class="language-typescript">true</code>.
+        </li>
+        <li>
+            If your web service only returns the id of the created entity, pipe the call to <code
+                  class="language-typescript">postEntity</code> with a <code
+                  class="language-typescript">switchMap</code> to <code
+                  class="language-typescript">loadEntityByKey</code> with this id.
+        </li>
+        <li>
+            If, like me, you love using web socket connections, call <code
+                  class="language-typescript">upsertValue</code> in the callback function handling the creation of a
+            pokemon.
+        </li>
+    </ul>
+
+    <p>
+        So if you try your component now, you'll notice that the list of pokemons get refresh automatically. However,
+        the button is still enabled during the call. One way to fix this would be to do this:
+    </p>
+
+    <pre>
+<code class="language-typescript">public adding = false;
+
+public add() {{ '{' }}
+  this.adding = true;
+
+  const data: PokemonCreationData = {{ '{' }}
+    name: this.form.value.name!,
+    type: this.form.value.type!
+  };
+
+  this._pokemonService
+    .addPokemon(data)
+    .pipe(finalize(() => this.adding = false))
+    .subscribe({{ '{' }}
+      next: () => this.form.reset({{ '{' }} name: null, type: null }),
+      error: err => console.log(err)
+    })
+}
+</code></pre>
+
+    <pre>
+<code class="language-xml">&lt;button type="submit"
+        [disabled]="form.valid === false || adding === true">Create&lt;/button>
+</code></pre>
+
+    <p>
+        This would work perfectly fine, however, it's a little verbose, especially if you have to do this every time you
+        create a component creating data. A good alternative consists in relying on the store. Indeed, when using <code
+              class="language-typescript">postEntity</code>, the store automatically maintains the "adding" state of the
+        store section you're using. In other words, you can achieve the same like this:
+    </p>
+
+    <pre>
+<code class="language-typescript">public adding$: Observable&lt;boolean> = this._store.select(s => s.pokemons).pipe(map(e => e.adding));
+
+public add() {{ '{' }}
+  const data: PokemonCreationData = {{ '{' }}
+    name: this.form.value.name!,
+    type: this.form.value.type!
+  };
+
+  this._pokemonService
+    .addPokemon(data)
+    .subscribe({{ '{' }}
+      next: () => this.form.reset({{ '{' }} name: null, type: null }),
+      error: err => console.log(err)
+    })
+}
+</code></pre>
+
+    <p>
+        And now, you can use this obervable in the template:
+    </p>
+
+    <pre>
+<code class="language-xml">&lt;button type="submit"
+        [disabled]="form.valid === false || (adding$ | async) === true">Create&lt;/button>
+</code></pre>
+
+    <p>
+        At the end, you only save two lines of code but on the long run, this feature comes very handy.
+    </p>
+
+    <p class="message information">
+        You can find the code of this section in <a
+           href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/08_Post"
+           target="_blank">this example</a> of the playground.
     </p>
 
     <h1 id="put">Put</h1>
@@ -1451,16 +1773,19 @@ public loadPokemonByType(id: number): Observable&lt;Pokemon[]> {{ '{' }}
     <p>
         Coming soon...
     </p>
+
     <h1 id="delete">Delete</h1>
 
     <p>
         Coming soon...
     </p>
+
     <h1 id="ngs-container">ngs-container</h1>
 
     <p>
         Coming soon...
     </p>
+
     <h1 id="store-component">store-component</h1>
 
     <p>
@@ -1476,7 +1801,9 @@ public loadPokemonByType(id: number): Observable&lt;Pokemon[]> {{ '{' }}
 
     <ul>
         <li>Support for standalone components</li>
+        <li>Unit testing</li>
     </ul>
 
 </main>
+
 <app-top-cta></app-top-cta>
