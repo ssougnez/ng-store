@@ -24,11 +24,9 @@
                 </label>
             </div>
             <button type="submit"
-                    [disabled]="form.valid === false || (busy$ | async) === true"
-                    *ngIf="form.value.id === null">Create</button>
-            <button type="submit"
-                    [disabled]="form.valid === false || (busy$ | async) === true"
-                    *ngIf="form.value.id !== null">Update</button>
+                    [disabled]="form.valid === false || (busy$ | async) === true">
+                {{ form.value.id === null ? 'Create' : 'Update' }}
+            </button>
         </form>
     </ng-template>
 </ngs-container>

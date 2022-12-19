@@ -143,41 +143,6 @@
       "type": "poison",
       "height": 6.07,
       "weight": 15.2
-    },
-    {
-      "name": "tttt",
-      "type": "electric",
-      "id": 13
-    },
-    {
-      "id": 14,
-      "name": "jjjj fffftughbnfdsddd !",
-      "type": "normal"
-    },
-    {
-      "name": "teeeeeest",
-      "type": "water",
-      "id": 15
-    },
-    {
-      "name": "gfdgfdgfdgfd",
-      "type": "normal",
-      "id": 16
-    },
-    {
-      "name": "fdsqfdsqfqs",
-      "type": "grass",
-      "id": 17
-    },
-    {
-      "id": 18,
-      "name": "hello !",
-      "type": "fire"
-    },
-    {
-      "id": 19,
-      "name": "yop !",
-      "type": "normal"
     }
   ],
   "types": [
