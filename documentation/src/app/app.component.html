@@ -1667,7 +1667,8 @@ export class PokemonAddFormComponent implements OnInit {{ '{' }}
 </code></pre>
 
     <p>
-        Basically, we just piped the observable returned by the function to add the value emitted in the "pokemons" section
+        Basically, we just piped the observable returned by the function to add the value emitted in the "pokemons"
+        section
         of the store. Of course, this will only work if, like JSON server, your REST API returns the created entity. If
         not, you'll have to find another way to refresh your store. Here are some ideas:
     </p>
@@ -1771,7 +1772,315 @@ public add() {{ '{' }}
     <h1 id="put">Put</h1>
 
     <p>
-        Coming soon...
+        To demonstrate how to update data with the store, we'll start with the code of <a
+           href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/08_Post">the previous
+            example</a>. First, we need to change the model containing updated data:
+    </p>
+
+    <pre>
+<code class="language-typescript">export type PokemonUpsertData = {{ '{' }}
+    id: number | null;
+    name: string;
+    type: PokemonType;
+}
+</code></pre>
+
+    <p>
+        the <code class="language-typescript">id</code> property is a number or <code
+              class="language-typescript">null</code> as it can contain both values; a
+        number when you want to update an existing entity or <code class="language-typescript">null</code> when you want
+        to create it. As for the service:
+    </p>
+
+    <pre>
+<code class="language-typescript">export class PokemonService {{ '{' }}
+
+    private _store: NgStore&lt;AppState> = inject(NgStore);
+
+    public loadPokemons(): Observable&lt;Pokemon[]> {{ '{' }}
+        return this._store.loadAllEntities('http://localhost:3000/pokemons-full', s => s.pokemons);
+    }
+
+    public loadPokemonById(id: number): Observable&lt;Pokemon> {{ '{' }}
+        return this._store.loadEntityByKey(`http://localhost:3000/pokemons-full/${{ '{' }}id}`, s => s.pokemons, id);
+    }
+
+}
+</code></pre>
+
+    <p>
+        Now, let's update the main component in order to display an edit icon next to the names of the pokemons:
+    </p>
+
+    <pre>
+<code class="language-typescript">export class AppComponent {{ '{' }}
+
+  private readonly _pokemonService = inject(PokemonService);
+  private readonly _store: NgStore&lt;AppState> = inject(NgStore);
+
+  public selectedId: number | null = null;
+  public trackByValue: TrackByFunction&lt;Pokemon> = trackByValue;
+
+  public query$: Observable&lt;Pokemon[]> = this._pokemonService.loadPokemons();
+  public data$: Observable&lt;Pokemon[]> = this._store.selectValues&lt;Pokemon>(s => s.pokemons).pipe(
+    map(pokemons => pokemons.sort((p1, p2) => p1.name.localeCompare(p2.name)))
+  );
+
+}
+</code></pre>
+
+    <pre>
+<code class="language-xml">&lt;ngs-container [query$]="query$"
+               [data$]="data$"
+               loaderType="text">
+    &lt;ng-template let-pokemons>
+        &lt;div class="flex-row gap1">
+            &lt;div class="flex-1">
+                &lt;div class="flex-row flex-aic gap1"
+                     *ngFor="let p of pokemons; trackBy: trackByValue">
+                    &lt;div>{{ '{' + '{' }} p.name }}&lt;/div>
+                    &lt;i class="fa fa-solid fa-edit pointer"
+                       (click)="selectedId = selectedId === p.id ? null : p.id">&lt;/i>
+                &lt;/div>
+            &lt;/div>
+            &lt;div class="flex-1">
+                &lt;app-pokemon-upsert-form [id]="selectedId">&lt;/app-pokemon-upsert-form>
+            &lt;/div>
+        &lt;/div>
+    &lt;/ng-template>
+&lt;/ngs-container>
+</code></pre>
+
+    <p>
+        Here, the only subtility is on the click event of the icon. Basically, it changes the <code
+              class="language-typescript">selectedId</code> variable on the id of the pokemon to edit or <code
+              class="language-typescript">null</code> if <code class="language-typescript">selectedId</code> already
+        contains it. It allows to select the pokemon if it was not yet selected or unselect it otherwise.
+    </p>
+
+    <p>
+        The most important code is located in the upsert component:
+    </p>
+
+    <pre>
+<code class="language-typescript">type FormData = {{ '{' }}
+  id: FormControl&lt;number | null>;
+  name: FormControl&lt;string | null>;
+  type: FormControl&lt;PokemonType | null>;
+}
+
+export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
+
+  @Input()
+  public set id(value: number | null) {{ '{' }}
+    this.query$ = value === null ? of(null) : this._pokemonService.loadPokemonById(value);
+    this.data$ = value === null ? of(null) : this._store.selectValueByKey(s => s.pokemons, value).pipe(filter(e => e !== null), take(1));
+  }
+
+  private readonly _fb = inject(FormBuilder);
+  private readonly _pokemonService = inject(PokemonService);
+  private readonly _store: NgStore&lt;AppState> = inject(NgStore);
+
+  public form!: FormGroup&lt;FormData>;
+
+  public busy$: Observable&lt;boolean> = this._store.select(s => s.pokemons).pipe(map(e => e.busy));
+  public data$!: Observable&lt;Pokemon | null>;
+  public query$!: Observable&lt;Pokemon | null>;
+
+  public ngOnInit(): void {{ '{' }}
+    this.form = this._fb.group({{ '{' }}
+      'id': new FormControl&lt;number | null>(null),
+      'name': new FormControl&lt;string | null>(null, Validators.required),
+      'type': new FormControl&lt;PokemonType | null>(null, Validators.required),
+    });
+  }
+
+  public upsert() {{ '{' }}
+    const data: PokemonUpsertData = {{ '{' }}
+      id: this.form.value.id!,
+      name: this.form.value.name!,
+      type: this.form.value.type!
+    };
+
+    this._pokemonService
+      .upsertPokemon(data)
+      .subscribe({{ '{' }}
+        next: () => this.form.value.id === null && this.reset(null),
+        error: err => console.log(err)
+      })
+  }
+
+  public reset(pokemon: Pokemon | null) {{ '{' }}
+    this.form.reset({{ '{' }}
+      id: pokemon?.id || null,
+      name: pokemon?.name || null,
+      type: pokemon?.type || null
+    })
+  }
+
+}
+</code></pre>
+
+    <p>
+        So the idea here is that we won't assume that the entity you want to update is already in the store. In a real
+        life scenario, it is most likely that entities will be loaded prior being able to update them but let's imagine
+        it's not the case.
+    </p>
+
+    <p>
+        The <code class="language-typescript">id</code> input can recieve two different values:
+    </p>
+
+    <ul>
+        <li><strong>null</strong>: Means that we want to create a new pokemon.</li>
+        <li><strong>A number</strong>: Means that we want to update the pokemon with this id.</li>
+    </ul>
+
+    <p>
+        So, depending on the value of this input, we will either set the <code class="language-typescript">query$</code>
+        and <code class="language-typescript">data$</code> observables on an observable emitting the <code
+              class="language-typescript">null</code> value (in case of creation) or on observables used to load and
+        select
+        the entity. Note that we use the operators <code class="language-typescript">filter</code> and <code
+              class="language-typescript">take</code> in order to only used the first non null emitted value. We do that
+        for a specific reason. Indeed, we'll set the value of the form based on the current data of the entity. However,
+        if we didn't stop after the first non null emitted value, we would have taken the risk to lost our modification
+        during the edition. Indeed, say you fetched the pokemon 1 and set the value of the form based on it. Now, while
+        you're typing the new name of the pokemon, the state of the entity changes (maybe in reaction to a web socket
+        message). As a new value is emitted, the form will reset with the new values and you'll lose all your
+        modifications. This is why we used <code class="language-typescript">take</code>; in
+        order to avoid losing the current modification.
+    </p>
+
+    <p>
+        Then we have the <code class="language-typescript">busy$</code> observable. In order to disable the button, we
+        could check the "adding" state of the entity list or the "updating" state of the entity but there is an easier
+        solution. Indeed, whenever an entity is being added, deleted or updated, the "busy" state of the entity list is
+        set to <code class="language-typescript">true</code>. So in this case, we can simply used this state to know
+        whether an entity is being updated or added.
+    </p>
+
+    <p>
+        In the <code class="language-typescript">ngOnInit</code>, we simply create our form with default values.
+    </p>
+
+    <p>
+        In the <code class="language-typescript">upsert</code> function, we simply create the payload then send it to
+        the <code class="language-typescript">upsertPokemon</code> function. Note that we only reset the form value in
+        case of creation. Indeed, in case of update, we want to keep the data synchronized with the <code
+              class="language-typescript">id</code> property.
+    </p>
+
+    <p>
+        The <code class="language-typescript">reset</code> function resets the form based on the object received in
+        parameter.
+    </p>
+
+    <p>
+        Now let's have a look at the template:
+    </p>
+
+    <pre>
+<code class="language-xml">&lt;ngs-container [query$]="query$"
+               [data$]="data$"
+               (changed)="reset($event)">
+    &lt;ng-template let-pokemon>
+        &lt;form [formGroup]="form"
+              (ngSubmit)="upsert()">
+            &lt;div>
+                &lt;label>
+                    Name: &lt;input type="text"
+                           formControlName="name">
+                &lt;/label>
+            &lt;/div>
+            &lt;div>
+                &lt;label>
+                    Type: &lt;select formControlName="type">
+                        &lt;option value="water">Water&lt;/option>
+                        &lt;option value="fire">Fire&lt;/option>
+                        &lt;option value="electric">Electric&lt;/option>
+                        &lt;option value="grass">Grass&lt;/option>
+                        &lt;option value="bug">Bug&lt;/option>
+                        &lt;option value="normal">Normal&lt;/option>
+                        &lt;option value="poison">Poison&lt;/option>
+                    &lt;/select>
+                &lt;/label>
+            &lt;/div>
+            &lt;button type="submit"
+                    [disabled]="form.valid === false || (busy$ | async) === true">
+                {{ '{' + '{' }} form.value.id === null ? 'Create' : 'Update' }}
+            &lt;/button>
+        &lt;/form>
+    &lt;/ng-template>
+&lt;/ngs-container>
+</code></pre>
+
+    <p>
+        We're using the <code class="language-typescript">changed</code> event of the container to execute a function
+        when the data emitted by <code class="language-typescript">data$</code> changes. In this case, we want to reset
+        the form with the emitted value. Remember, in case of <code class="language-typescript">id null</code>, we
+        emit the value <code class="language-typescript">null</code>, however, if the <code
+              class="language-typescript">id</code> is defined, we emit to first non-null value from the store.
+    </p>
+
+    <p>
+        The last thing to note is the button: we disable it if the form is invalid or if the <code
+              class="language-typescript">busy$</code> observable emits <code class="language-typescript">true</code>.
+        Moreover, we change the label of the button depending on the <code class="language-typescript">id</code> field
+        of the form.
+    </p>
+
+    <p>
+        Note that we could have done this in different ways, but it's important to use an observable for the busy state
+        of the form. Indeed, as we are using the <code class="language-typescript">OnPush</code> change detection
+        strategy, it's important to refresh the view when the state of the form changes. Without this, we would have
+        needed to <code class="language-typescript">markForCheck</code> the component in order to reflect the form
+        reset after the update was done.
+    </p>
+
+    <p>
+        The last piece of the puzzle is the <code class="language-typescript">upsertPokemon</code> function of the
+        service:
+    </p>
+
+    <pre>
+<code class="language-typescript">public upsertPokemon(data: PokemonUpsertData): Observable&lt;Pokemon> {{ '{' }}
+    const action$ = data.id === null
+        ? this._store.postEntity(`http://localhost:3000/pokemons-full`, s => s.pokemons, data)
+        : this._store.putEntityByKey&lt;Pokemon>(`http://localhost:3000/pokemons-full/${{ '{' }}data.id}`, s => s.pokemons, data.id, data);
+
+    return action$.pipe(
+        tap(pokemon => this._store.upsertValue(s => s.pokemons, pokemon))
+    );
+}
+</code></pre>
+
+    <p>
+        This function is actually a bit more complicated than it needs to be "because" of the JSON server. Indeed, in
+        real life scenario, you would probably have implemnted an upsert function creating or updating the entity.
+        However,
+        JSON server does not provide a route to do both. You either have to perform a POST to create the entity of a PUT
+        to update it.
+    </p>
+
+    <p>
+        However, it is not very complicated. Basically, if <code class="language-typescript">data.id</code> is <code
+              class="language-typescript">null</code>, we call the <code class="language-typescript">postEntity</code>
+        function like we did in the previous example. Otherwise, we call <code
+              class="language-typescript">putEntityByKey</code> that behaves exactly like <code
+              class="language-typescript">postEntity</code> but requires the key of the entity as the third parameter.
+        As both functions return the same type of object, you can store it in a single variable then pipe it in order to
+        update the store once the call is done.
+    </p>
+
+    <p>
+        And that's it, you have a component that can add or update an entity pretty easily.
+    </p>
+
+    <p class="message information">
+        You can find the code of this section in <a
+           href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/09_Put"
+           target="_blank">this example</a> of the playground.
     </p>
 
     <h1 id="delete">Delete</h1>

@@ -65,7 +65,7 @@ export class PokemonUpsertFormComponent implements OnInit {
   /************************************************** PUBLIC **************************************************/
 
   /** */
-  public add() {
+  public upsert() {
     const data: PokemonUpsertData = {
       id: this.form.value.id!,
       name: this.form.value.name!,

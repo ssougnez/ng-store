@@ -3,7 +3,7 @@
                (changed)="reset($event)">
     <ng-template let-pokemon>
         <form [formGroup]="form"
-              (ngSubmit)="add()">
+              (ngSubmit)="upsert()">
             <div>
                 <label>
                     Name: <input type="text"
