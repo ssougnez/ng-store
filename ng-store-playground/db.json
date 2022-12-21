@@ -82,13 +82,6 @@
       "type": "fire"
     },
     {
-      "id": 4,
-      "name": "Vulpix",
-      "type": "fire",
-      "height": 2,
-      "weight": 21.08
-    },
-    {
       "id": 5,
       "name": "Squirtle",
       "type": "water",
@@ -101,13 +94,6 @@
       "type": "bug",
       "height": 1,
       "weight": 6.4
-    },
-    {
-      "id": 7,
-      "name": "Weedle",
-      "type": "bug",
-      "height": 1,
-      "weight": 7.1
     },
     {
       "id": 8,

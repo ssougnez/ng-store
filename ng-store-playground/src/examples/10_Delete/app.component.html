@@ -1,13 +1,15 @@
-<div *ngFor="let p of pokemons$ | async; trackBy: trackByValue">
-    {{ p.name }}
-</div>
-
-<div>
-    <button (click)="upsertNonExisting()">Upsert non existing</button>
-</div>
-<div>
-    <button (click)="upsertExisting()">Upsert existing</button>
-</div>
-<div>
-    <button (click)="updateExisting()">Update existing</button>
-</div>
+<ngs-container [query$]="query$"
+               [data$]="pokemons$"
+               loaderType="text">
+    <ng-template let-pokemons>
+        <div class="flex-row flex-aic gap1"
+             *ngFor="let p of pokemons; trackBy: trackByEntity">
+            <div>{{ p.value.name }}</div>
+            <i class="fa fa-solid fa-trash pointer"
+               (click)="deletePokemon(p.value.id)"
+               *ngIf="p.deleting === false"></i>
+            <i class="fa fa-spin fa-spinner"
+               *ngIf="p.deleting === true"></i>
+        </div>
+    </ng-template>
+</ngs-container>

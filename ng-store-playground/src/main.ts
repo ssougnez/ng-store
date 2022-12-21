@@ -38,7 +38,7 @@ import { initial as initialContainerExample } from './examples/11_Container/stat
 import { AppComponent as ComponentComponent } from './examples/12_Component/app.component';
 import { initial as initialComponentExample } from './examples/12_Component/state/app.state';
 
-const component = PutComponent;
+const component = DeleteComponent;
 
 const configurations = new Map();
 
@@ -122,13 +122,15 @@ configurations.set(PutComponent, [
   provideHttpClient()
 ]);
 
-configurations.set(DeleteComponent, [{
-  provide: NG_STORE_CONFIG,
-  useValue: {
-    initialValue: initialDeleteExample,
-    httpClientType: null
-  } as StoreConfiguration
-}]);
+configurations.set(DeleteComponent, [
+  {
+    provide: NG_STORE_CONFIG,
+    useValue: {
+      initialValue: initialDeleteExample
+    } as StoreConfiguration
+  },
+  provideHttpClient()
+]);
 
 configurations.set(ContainerComponent, [{
   provide: NG_STORE_CONFIG,

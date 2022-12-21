@@ -1,61 +1,47 @@
-import { AsyncPipe, JsonPipe, NgFor } from '@angular/common';
+import { AsyncPipe, JsonPipe, NgFor, NgIf } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, TrackByFunction } from '@angular/core';
-import { NgStore, trackByValue } from '@ssougnez/ng-store';
+import { Entity, NgStore, NgStoreModule, trackByEntity, trackByValue } from '@ssougnez/ng-store';
 import { map, Observable } from 'rxjs';
 import { Pokemon } from './models/pokemon.model';
+import { PokemonService } from './services/pokemon.service';
 import { AppState } from './state/app.state';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
+  styleUrls: ['./app.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
   imports: [
-    AsyncPipe,
+    NgIf,
     NgFor,
-    JsonPipe
+    NgStoreModule
   ]
 })
 export class AppComponent {
 
   /************************************************** SERVICES **************************************************/
 
+  private readonly _pokemonService = inject(PokemonService);
   private readonly _store: NgStore<AppState> = inject(NgStore);
 
-  /************************************************** VARIABLES **************************************************/
+  /************************************************** OBSERVABLES **************************************************/
 
-  public pokemons$: Observable<Pokemon[]> = this._store.selectValues<Pokemon>(s => s.pokemons).pipe(
-    map(pokemons => pokemons.sort((p1, p2) => p1.name.localeCompare(p2.name)))
+  public query$: Observable<Pokemon[]> = this._pokemonService.loadPokemons();
+  public pokemons$: Observable<Entity<Pokemon>[]> = this._store.selectEntities<Pokemon>(s => s.pokemons).pipe(
+    map(pokemons => pokemons.sort((p1, p2) => p1.value.name.localeCompare(p2.value.name)))
   );
 
-  public trackByValue: TrackByFunction<Pokemon> = trackByValue;
+  public trackByEntity: TrackByFunction<Entity<Pokemon>> = trackByEntity;
 
   /************************************************** PUBLIC **************************************************/
 
   /** */
-  public upsertNonExisting(): void {
-    const pokemon: Pokemon = {
-      id: 13,
-      name: 'Vulpix',
-      type: 'fire'
-    };
-
-    this._store.upsertValue<Pokemon>(s => s.pokemons, pokemon);
-  }
-
-  /** */
-  public upsertExisting(): void {
-    const pokemon: Pokemon = {
-      id: 1,
-      name: 'Zubat',
-      type: 'poison'
-    };
-
-    this._store.upsertValue<Pokemon>(s => s.pokemons, pokemon);
-  }
-
-  /** */
-  public updateExisting(): void {
-    this._store.updateValueByKey(s => s.pokemons, 1, p => p.name = 'Jigglypuff');
+  public deletePokemon(id: number) {
+    this._pokemonService
+      .deletePokemon(id)
+      .subscribe({
+        error: err => console.log(err)
+      })
   }
 }

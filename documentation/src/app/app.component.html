@@ -2086,7 +2086,129 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
     <h1 id="delete">Delete</h1>
 
     <p>
-        Coming soon...
+        The last operation left to support is the deletion of values in the store. Here are the relevant parts of the
+        example:
+    </p>
+
+    <p>
+        First, the model:
+    </p>
+
+    <pre>
+<code class="language-typescript">export type Pokemon = BaseEntity&lt;number> & {{ '{' }}
+    name: string;
+    type: 'water' | 'fire' | 'electric' | 'grass' | 'bug' | 'normal' | 'poison';
+}
+</code></pre>
+
+    <p>
+        Then, the service:
+    </p>
+
+    <pre>
+<code class="language-typescript">export class PokemonService {{ '{' }}
+
+    private _store: NgStore&lt;AppState> = inject(NgStore);
+
+    public deletePokemon(id: number): Observable&lt;Pokemon> {{ '{' }}
+        return this._store.deleteEntityByKey(`http://localhost:3000/pokemons-full/${{ '{' }}id}`, s => s.pokemons, id).pipe(
+            tap(pokemon => this._store.removeValuesByKeys(s => s.pokemons, id))
+        );
+    }
+
+    public loadPokemons(): Observable&lt;Pokemon[]> {{ '{' }}
+        return this._store.loadAllEntities('http://localhost:3000/pokemons-full', s => s.pokemons);
+    }
+
+}
+</code></pre>
+
+    <p>
+        Deleting an item from the store using a REST call can be done using the <code
+              class="language-typescript">deleteEntityByKey</code> function. It simply expects the route to the REST
+        API, the section of the store to find the entity and its key. Note that this function only calls the route and
+        set the <code class="language-typescript">deleting</code> property of the entity to <code
+              class="language-typescript">true</code> but does not actually remove the entity from the store, which is
+        why we pipe the observable to a call to the <code class="language-typescript">removeValuesByKeys</code> function
+        that actually removes the entity from the store. Note that you can pass more than one key if you wish to delete
+        multiple entities.
+    </p>
+
+    <p>
+        There is also another function called <code class="language-typescript">removeValuesBy</code> that can be used
+        to remove entities based on a predicate.
+    </p>
+
+    <p>
+        Now, the code of the main component:
+    </p>
+
+    <pre>
+<code class="language-typescript">export class AppComponent {{ '{' }}
+
+  private readonly _pokemonService = inject(PokemonService);
+  private readonly _store: NgStore&lt;AppState> = inject(NgStore);
+
+  public query$: Observable&lt;Pokemon[]> = this._pokemonService.loadPokemons();
+  public pokemons$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntities&lt;Pokemon>(s => s.pokemons).pipe(
+    map(pokemons => pokemons.sort((p1, p2) => p1.value.name.localeCompare(p2.value.name)))
+  );
+
+  public trackByEntity: TrackByFunction&lt;Entity&lt;Pokemon>> = trackByEntity;
+
+  public deletePokemon(id: number) {{ '{' }}
+    this._pokemonService
+      .deletePokemon(id)
+      .subscribe({{ '{' }}
+        error: err => console.log(err)
+      })
+  }
+}
+</code></pre>
+
+    <p>
+        The code is pretty self explanatory but there is one thing worth noticing. So far, we only selected values from
+        the store because we didn't need to access their state (adding, updating or deleting). Here, we want to display
+        a deleting indicator while the entity is being deleted. To do so, we'll select the pokemon as entities instead
+        of as values. This also means that we need to use <code class="language-typescript">trackByEntity</code> instead
+        of <code class="language-typescript">trackByValue</code>.
+    </p>
+
+    <p>
+        And finally the template:
+    </p>
+
+    <pre>
+<code class="language-xml">&lt;ngs-container [query$]="query$"
+               [data$]="pokemons$"
+               loaderType="text">
+    &lt;ng-template let-pokemons>
+        &lt;div class="flex-row flex-aic gap1"
+             *ngFor="let p of pokemons; trackBy: trackByEntity">
+            &lt;div>{{ '{' + '{' }} p.value.name }}&lt;/div>
+            &lt;i class="fa fa-solid fa-trash pointer"
+               (click)="deletePokemon(p.value.id)"
+               *ngIf="p.deleting === false">&lt;/i>
+            &lt;i class="fa fa-spin fa-spinner"
+               *ngIf="p.deleting === true">&lt;/i>
+        &lt;/div>
+    &lt;/ng-template>
+&lt;/ngs-container>
+</code></pre>
+
+    <p>
+        Note that here, we use the <code class="language-typescript">value</code> property of the entities to access the
+        actual <code class="language-typescript">Pokemon</code> object. However, we use the property <code
+              class="language-typescript">deleting</code> to define whether the displayed icon is the little trash or
+        the spinner. This works because the <code class="language-typescript">deleteEntityByKey</code> function updates
+        the <code class="language-typescript">deleting</code> property of the entity during deletion, so you don't have
+        to handle this yourself.
+    </p>
+
+    <p class="message information">
+        You can find the code of this section in <a
+           href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/10_Delete"
+           target="_blank">this example</a> of the playground.
     </p>
 
     <h1 id="ngs-container">ngs-container</h1>

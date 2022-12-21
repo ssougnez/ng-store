@@ -782,7 +782,7 @@ export class NgStore<TStore>  {
   * @param root           Store entities containing the entity to delete
   * @param key            Key to find the entity in the entities
   */
-  public deleteEntityByKey<T extends BaseEntity<T['id']>, TReturn = unknown>(
+  public deleteEntityByKey<T extends BaseEntity<T['id']>, TReturn = T>(
     url: string,
     root: (s: TStore) => Entities<T>,
     key: T['id']
