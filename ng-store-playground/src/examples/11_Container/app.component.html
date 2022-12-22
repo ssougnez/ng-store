@@ -1,13 +1,48 @@
-<div *ngFor="let p of pokemons$ | async; trackBy: trackByValue">
-    {{ p.name }}
-</div>
+<!--------------------- LOADER TEXT --------------------->
 
-<div>
-    <button (click)="upsertNonExisting()">Upsert non existing</button>
-</div>
-<div>
-    <button (click)="upsertExisting()">Upsert existing</button>
-</div>
-<div>
-    <button (click)="updateExisting()">Update existing</button>
-</div>
+<ngs-container [query$]="query$"
+               [data$]="pokemons$"
+               loaderType="text"
+               loaderText="Wait a minute...">
+    <ng-template let-pokemons>
+        <div *ngFor="let p of pokemons; trackBy: trackByValue">{{ p.name }}</div>
+    </ng-template>
+</ngs-container>
+
+<!--------------------- LOADER TEMPLATE --------------------->
+
+<ngs-container [query$]="query$"
+               [data$]="pokemons$"
+               [loaderTemplate]="loader"
+               loaderType="template">
+    <ng-template let-pokemons>
+        <div *ngFor="let p of pokemons; trackBy: trackByValue">{{ p.name }}</div>
+    </ng-template>
+</ngs-container>
+
+<ng-template #loader>
+    The data are currently being fetched...
+</ng-template>
+
+<!--------------------- LOADER COMPONENT --------------------->
+
+<ngs-container [query$]="query$"
+               [data$]="pokemons$">
+    <ng-template let-pokemons>
+        <div *ngFor="let p of pokemons; trackBy: trackByValue">{{ p.name }}</div>
+    </ng-template>
+</ngs-container>
+
+<!--------------------- ERROR TEMPLATE --------------------->
+
+<ngs-container [query$]="query$"
+               [data$]="pokemons$"
+               [errorTemplate]="error">
+    <ng-template let-pokemons>
+        <div *ngFor="let p of pokemons; trackBy: trackByValue">{{ p.name }}</div>
+    </ng-template>
+</ngs-container>
+
+<ng-template #error let-err>
+    <div style="color:red">{{ err.message }}</div>
+</ng-template>

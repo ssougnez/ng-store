@@ -2214,10 +2214,165 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
     <h1 id="ngs-container">ngs-container</h1>
 
     <p>
-        Coming soon...
+        The <code class="language-xml">ngs-container</code> component can be customized in various ways in order to look
+        exactly like you want. Let's start by talking about the loading indicator, which can be configured in four
+        different ways using the <code class="language-typescript">loaderType</code> property:
     </p>
 
-    <h1 id="store-component">store-component</h1>
+    <ul>
+        <li><strong>text</strong>: Displays a sentence during the loading.</li>
+        <li><strong>template</strong>: Displays a custom template during the loading.</li>
+        <li><strong>component</strong>: Displays a custom component during the loading.</li>
+        <li><strong>none</strong>: Does not display anything during the loading.</li>
+    </ul>
+
+    <p>
+        If you opt for the "text" approach, you can customize the displayed text in two ways. Either by simply using the
+        <code class="language-xml">loaderText</code> attribute:
+    </p>
+
+    <pre>
+<code class="language-xml">&lt;ngs-container [query$]="query$"
+               [data$]="pokemons$"
+               loaderType="text"
+               loaderText="Wait a minute...">
+    &lt;ng-template let-pokemons>
+        
+    &lt;/ng-template>
+&lt;/ngs-container>
+</code></pre>
+
+    <p>
+        However, you can also use the injection token in order to define the sentence to display globally:
+    </p>
+
+    <pre>
+<code class="language-typescript">{{ '{' }}
+  provide: NG_STORE_CONFIG,
+  useValue: {{ '{' }}
+    initialValue: initial,
+    defaultLoaderText: () => 'This might take a while...'
+  } as StoreConfiguration
+}
+</code></pre>
+
+    <p>
+        As this property expects a function, you can use <code class="language-typescript">inject</code> in order to
+        inject a translation service that will return the sentence in the desired language. Note that the value of the
+        attribute take precedence over the one of the injection token.
+    </p>
+
+    <p>
+        You can also choose to display a template instead of a loading text:
+    </p>
+
+    <pre>
+<code class="language-xml">&lt;ngs-container [query$]="query$"
+               [data$]="pokemons$"
+               [loaderTemplate]="loader"
+               loaderType="template">
+    &lt;ng-template let-pokemons>
+        &lt;div *ngFor="let p of pokemons; trackBy: trackByValue">{{ '{' + '{' }} p.name }}&lt;/div>
+    &lt;/ng-template>
+&lt;/ngs-container>
+
+&lt;ng-template #loader>
+    The data are currently being fetched...
+&lt;/ng-template>
+</code></pre>
+
+    <p>
+        Finally, you can also create a custom component that will be instantiated each time the loading indicator has to
+        be displayed. The only requirement is that this component must implement <code
+              class="language-typescript">IBaseLoaderComponent</code>:
+    </p>
+
+    <pre>
+<code class="language-typescript">export class LoaderComponent implements IBaseLoaderComponent {{ '{' }}
+
+  @Input()
+  public size: string = '1rem';
+
+}
+</code></pre>
+
+    <pre><code class="language-xml">&lt;div [style.fontSize]="size">Please wait a minute during the loading...&lt;/div></code></pre>
+
+    <p>
+        This interface forces you to implement a <code class="language-typescript">size</code> property defining the
+        size of the loader. Indeed, most of the time, this approach (which is the default one) is used to display an
+        animated loading indicator and being able to define its size can come handy (note that you can also specify the
+        size directly using the attribute of the container, which superseed the global configuration). Finally, you have
+        to adapt the store configuration to specify the component to use:
+    </p>
+
+    <pre>
+<code class="language-typescript">{{ '{' }}
+  provide: NG_STORE_CONFIG,
+  useValue: {{ '{' }}
+    initialValue: initial,
+    loaderComponent: LoaderComponent
+  } as StoreConfiguration
+}
+</code></pre>
+
+    <p>
+        You can define the appearance of the errors in the same way you do for loading indicators. By default, the JSON
+        representation of the error is displayed in a <code class="language-xml">pre</code> tag. However, you can choose
+        to display it in a template:
+    </p>
+
+    <pre>
+<code class="language-xml">&lt;ngs-container [query$]="query$"
+               [data$]="pokemons$"
+               [errorTemplate]="error">
+    &lt;ng-template let-pokemons>
+        
+    &lt;/ng-template>
+&lt;/ngs-container>
+
+&lt;ng-template #error let-err>
+    &lt;div style="color:red">{{ '{' + '{' }} err.message }}&lt;/div>
+&lt;/ng-template>
+</code></pre>
+
+    <p>
+        You can also implement a custom error component with the requirement that it has to implement <code
+              class="language-typescript">IBaseErrorComponent</code>:
+    </p>
+
+    <pre>
+<code class="language-typescript">export class ErrorComponent implements IBaseErrorComponent {{ '{' }}}
+
+  @Input()
+  public error: any;
+
+}
+</code></pre>
+
+    <pre><code class="language-xml">&lt;div style="color:red">{{ '{' + '{' }} error.message }}&lt;/div></code></pre>
+
+    <p>
+        Basically, you just have to implement an <code class="language-typescript">error</code> input that will receive
+        the error. Finally, you just have to update the store configuration to take this component into account:
+    </p>
+
+    <pre>
+<code class="language-typescript">{{ '{' }}
+  provide: NG_STORE_CONFIG,
+  useValue: {{ '{' }}
+    initialValue: initial,
+    errorComponent: ErrorComponent
+  } as StoreConfiguration
+},
+</code></pre>
+
+    <p>
+        As a remineder, the container component also support the <code class="language-typescript">changed</code> event
+        that forwards values emitted by the <code class="language-typescript">data$</code> observable.
+    </p>
+
+    <h1 id="store-component">StoreComponent</h1>
 
     <p>
         Coming soon...

@@ -3,10 +3,8 @@
     <ng-container *ngTemplateOutlet="template; context: { $implicit: (data$ | async) }"></ng-container>
   </ng-template>
   <ng-container *ngIf="(loaded$ | async) !== true; else dataTpl">
-    <div class="loader"
-         *ngIf="loaderType === 'component'">
-      <ngs-loader-host [size]="loaderSize"></ngs-loader-host>
-    </div>
+    <ngs-loader-host [size]="loaderSize"
+                     *ngIf="loaderType === 'component'"></ngs-loader-host>
     <ng-container *ngIf="loaderType === 'text'">{{ loaderText }}</ng-container>
     <ng-container *ngIf="loaderType === 'template'">
       <ng-container *ngTemplateOutlet="loaderTemplate"></ng-container>

@@ -33,12 +33,14 @@ import { AppComponent as DeleteComponent } from './examples/10_Delete/app.compon
 import { initial as initialDeleteExample } from './examples/10_Delete/state/app.state';
 
 import { AppComponent as ContainerComponent } from './examples/11_Container/app.component';
+import { ErrorComponent } from './examples/11_Container/components/error/error.component';
+import { LoaderComponent } from './examples/11_Container/components/loader/loader.component';
 import { initial as initialContainerExample } from './examples/11_Container/state/app.state';
 
 import { AppComponent as ComponentComponent } from './examples/12_Component/app.component';
 import { initial as initialComponentExample } from './examples/12_Component/state/app.state';
 
-const component = DeleteComponent;
+const component = ContainerComponent;
 
 const configurations = new Map();
 
@@ -132,13 +134,18 @@ configurations.set(DeleteComponent, [
   provideHttpClient()
 ]);
 
-configurations.set(ContainerComponent, [{
-  provide: NG_STORE_CONFIG,
-  useValue: {
-    initialValue: initialContainerExample,
-    httpClientType: null
-  } as StoreConfiguration
-}]);
+configurations.set(ContainerComponent, [
+  {
+    provide: NG_STORE_CONFIG,
+    useValue: {
+      initialValue: initialContainerExample,
+      defaultLoaderText: () => 'This might take a while...',
+      loaderComponent: LoaderComponent,
+      errorComponent: ErrorComponent
+    } as StoreConfiguration
+  },
+  provideHttpClient()
+]);
 
 configurations.set(ComponentComponent, [{
   provide: NG_STORE_CONFIG,
