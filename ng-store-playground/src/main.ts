@@ -40,7 +40,7 @@ import { initial as initialContainerExample } from './examples/11_Container/stat
 import { AppComponent as ComponentComponent } from './examples/12_Component/app.component';
 import { initial as initialComponentExample } from './examples/12_Component/state/app.state';
 
-const component = ContainerComponent;
+const component = ComponentComponent;
 
 const configurations = new Map();
 
@@ -147,13 +147,15 @@ configurations.set(ContainerComponent, [
   provideHttpClient()
 ]);
 
-configurations.set(ComponentComponent, [{
-  provide: NG_STORE_CONFIG,
-  useValue: {
-    initialValue: initialComponentExample,
-    httpClientType: null
-  } as StoreConfiguration
-}]);
+configurations.set(ComponentComponent, [
+  {
+    provide: NG_STORE_CONFIG,
+    useValue: {
+      initialValue: initialComponentExample
+    } as StoreConfiguration
+  },
+  provideHttpClient()
+]);
 
 bootstrapApplication(component, {
   providers: [

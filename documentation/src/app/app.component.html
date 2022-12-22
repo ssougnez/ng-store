@@ -2368,14 +2368,66 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
 </code></pre>
 
     <p>
-        As a remineder, the container component also support the <code class="language-typescript">changed</code> event
+        As a reminder, the container component also support the <code class="language-typescript">changed</code> event
         that forwards values emitted by the <code class="language-typescript">data$</code> observable.
     </p>
 
     <h1 id="store-component">StoreComponent</h1>
 
     <p>
-        Coming soon...
+        When using the store, there is a kind of component that you'll be implementing often. The ones that only display
+        one or several values and do nothing else. For example, take the following example:
+    </p>
+
+    <pre>
+<code class="language-typescript">export class AppComponent {{ '{' }}
+
+  private readonly _pokemonService = inject(PokemonService);
+  private readonly _store: NgStore&lt;AppState> = inject(NgStore);
+
+  public query$: Observable&lt;Pokemon[]> = this._pokemonService.loadPokemons();
+  public pokemons$: Observable&lt;Pokemon[]> = this._store.selectValues&lt;Pokemon>(s => s.pokemons).pipe(
+    map(pokemons => pokemons.sort((p1, p2) => p1.name.localeCompare(p2.name)))
+  );
+
+  public trackByValue: TrackByFunction&lt;Pokemon> = trackByValue;
+
+}
+</code></pre>
+
+    <p>
+        There are some parts here that are common to all components of this type: the injection of the store, the
+        creation of the <code class="language-typescript">query$</code> observable and the creation of the <code
+              class="language-typescript">data$</code> observable. In order to avoid having to repeat this on all
+        components of that type, the store comes with a base class helping you reduce a bit the boilerplate:
+    </p>
+
+    <pre>
+<code class="language-typescript">export class AppComponent extends StoreComponent&lt;AppState, Pokemon[]> implements OnInit {{ '{' }}
+
+  private readonly _pokemonService = inject(PokemonService);
+
+  public trackByValue: TrackByFunction&lt;Pokemon> = trackByValue;
+
+  public ngOnInit() {{ '{' }}
+    this.query$ = this._pokemonService.loadPokemons();
+    this.data$ = this._store.selectValues&lt;Pokemon>(s => s.pokemons).pipe(
+      map(pokemons => pokemons.sort((p1, p2) => p1.name.localeCompare(p2.name)))
+    );
+  }
+
+}
+</code></pre>
+
+    <p>
+        Note that in this case, you have to use the <code class="language-typescript">data$</code> observable and not
+        <code class="language-typescript">pokemon$</code>. The gain here is not obvious but it's more clear when you
+        have an input that defines the observables. In that case, you can directly assign them like we did in the <code
+              class="language-typescript">ngOnInit</code>.
+    </p>
+
+    <p>
+        This component will not reduce the size of your bundle by half but it comes handy from time to time.
     </p>
 
     <h1 id="roadmap">Roadmap</h1>
