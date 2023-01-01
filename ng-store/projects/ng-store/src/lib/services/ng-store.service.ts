@@ -411,7 +411,7 @@ export class NgStore<TStore>  {
 
             for (const index of snapshotRoot._indiceNames) {
               const value = snapshotRoot._array[i].value[index];
-              const mapArray = (snapshotRoot._indices[index].get(value) || []).filter(p => p !== i);
+              const mapArray = (draftRoot._indices[index].get(value) || []).filter(p => p !== i);
 
               draftRoot._indices[index].set(value, mapArray);
             }
