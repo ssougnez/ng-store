@@ -1,7 +1,7 @@
 import { NgFor } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, OnInit, TrackByFunction } from '@angular/core';
-import { NgStore, NgStoreModule, StoreComponent, trackByValue } from '@ssougnez/ng-store';
-import { map, Observable } from 'rxjs';
+import { NgStoreContainerComponent, StoreComponent, trackByValue } from '@ssougnez/ng-store';
+import { map } from 'rxjs';
 import { Pokemon } from './models/pokemon.model';
 import { PokemonService } from './services/pokemon.service';
 import { AppState } from './state/app.state';
@@ -13,7 +13,7 @@ import { AppState } from './state/app.state';
   standalone: true,
   imports: [
     NgFor,
-    NgStoreModule
+    NgStoreContainerComponent
   ]
 })
 export class AppComponent extends StoreComponent<AppState, Pokemon[]> implements OnInit {

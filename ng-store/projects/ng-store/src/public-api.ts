@@ -5,3 +5,4 @@ export * from './lib/services';
 export * from './lib/tokens';
 export * from './lib/utility';
 export * from './lib/ng-store.module';
+export * from './lib/provider';

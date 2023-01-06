@@ -1,7 +1,7 @@
 import { AsyncPipe, JsonPipe, NgIf } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, Input, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { NgStore, NgStoreModule } from '@ssougnez/ng-store';
+import { NgStore, NgStoreContainerComponent, NgStoreModule } from '@ssougnez/ng-store';
 import { filter, map, Observable, of, take } from 'rxjs';
 import { Pokemon, PokemonType, PokemonUpsertData } from '../../models/pokemon.model';
 import { PokemonService } from '../../services/pokemon.service';
@@ -22,7 +22,7 @@ type FormData = {
     AsyncPipe,
     JsonPipe,
     NgIf,
-    NgStoreModule,
+    NgStoreContainerComponent,
     ReactiveFormsModule
   ]
 })

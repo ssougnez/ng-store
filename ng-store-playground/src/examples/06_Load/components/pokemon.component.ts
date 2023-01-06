@@ -1,6 +1,6 @@
 import { JsonPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, Input } from '@angular/core';
-import { NgStore, NgStoreModule } from '@ssougnez/ng-store';
+import { NgStore, NgStoreContainerComponent } from '@ssougnez/ng-store';
 import { Observable } from 'rxjs';
 import { Pokemon } from '../models/pokemon.model';
 import { PokemonService } from '../services/pokemon.service';
@@ -13,7 +13,7 @@ import { AppState } from '../state/app.state';
   standalone: true,
   imports: [
     JsonPipe,
-    NgStoreModule
+    NgStoreContainerComponent
   ]
 })
 export class PokemonComponent {

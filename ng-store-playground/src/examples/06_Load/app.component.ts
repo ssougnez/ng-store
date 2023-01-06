@@ -1,6 +1,6 @@
 import { NgFor, NgIf } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, TrackByFunction } from '@angular/core';
-import { NgStore, NgStoreModule, trackByValue } from '@ssougnez/ng-store';
+import { NgStore, NgStoreContainerComponent, trackByValue } from '@ssougnez/ng-store';
 import { map, Observable } from 'rxjs';
 import { PokemonComponent } from './components/pokemon.component';
 import { Pokemon } from './models/pokemon.model';
@@ -16,7 +16,7 @@ import { AppState } from './state/app.state';
   imports: [
     NgIf,
     NgFor,
-    NgStoreModule,
+    NgStoreContainerComponent,
     PokemonComponent
   ]
 })

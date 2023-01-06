@@ -71,10 +71,8 @@
     },
     {
       "id": 2,
-      "name": "Bulbasaur",
-      "type": "grass",
-      "height": 2.04,
-      "weight": 15.2
+      "name": "Bulbasaur !!!",
+      "type": "grass"
     },
     {
       "id": 3,
@@ -125,10 +123,8 @@
     },
     {
       "id": 12,
-      "name": "Ekans ",
-      "type": "poison",
-      "height": 6.07,
-      "weight": 15.2
+      "name": "Ekans !!",
+      "type": "poison"
     }
   ],
   "types": [

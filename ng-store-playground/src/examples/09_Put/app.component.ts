@@ -1,6 +1,6 @@
 import { NgFor } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, TrackByFunction } from '@angular/core';
-import { NgStore, NgStoreModule, trackByValue } from '@ssougnez/ng-store';
+import { NgStore, NgStoreContainerComponent, NgStoreModule, trackByValue } from '@ssougnez/ng-store';
 import { map, Observable } from 'rxjs';
 import { PokemonUpsertFormComponent } from './components/pokemon-upsert-form/pokemon-upsert-form.component';
 import { Pokemon } from './models/pokemon.model';
@@ -15,7 +15,7 @@ import { AppState } from './state/app.state';
   standalone: true,
   imports: [
     NgFor,
-    NgStoreModule,
+    NgStoreContainerComponent,
     PokemonUpsertFormComponent
   ]
 })

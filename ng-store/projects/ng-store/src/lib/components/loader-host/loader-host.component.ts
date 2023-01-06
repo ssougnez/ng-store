@@ -5,6 +5,7 @@ import { NG_STORE_CONFIG } from '../../tokens';
 @Component({
   selector: 'ngs-loader-host',
   template: '<ng-container #host></ng-container>',
+  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NgStoreLoaderHostComponent implements OnInit {

@@ -1,17 +1,35 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ContentChild, EventEmitter, inject, Inject, Input, OnDestroy, Output, TemplateRef } from '@angular/core';
+import { AsyncPipe, JsonPipe, NgIf, NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ContentChild, EventEmitter, inject, Input, OnDestroy, Output, TemplateRef } from '@angular/core';
 import { delay, distinctUntilChanged, filter, map, Observable, shareReplay, Subscription, switchMap, tap } from 'rxjs';
 import { StoreConfiguration } from '../../models';
 import { mapToError } from '../../operators';
 import { NG_STORE_CONFIG } from '../../tokens';
+import { NgStoreErrorHostComponent } from '../error-host/error-host.component';
+import { NgStoreLoaderHostComponent } from '../loader-host/loader-host.component';
 
 export type LoaderType = 'component' | 'template' | 'text' | 'none';
 
 @Component({
   selector: 'ngs-container',
   templateUrl: './container.component.html',
+  standalone: true,
+  imports: [
+    AsyncPipe,
+    JsonPipe,
+    NgIf,
+    NgStoreErrorHostComponent,
+    NgStoreLoaderHostComponent,
+    NgTemplateOutlet
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NgStoreContainerComponent<T> implements OnDestroy {
+
+  /****************************************************************** SERVICES ******************************************************************/
+
+  public readonly config: StoreConfiguration = inject(NG_STORE_CONFIG);
+
+  private readonly _cdr = inject(ChangeDetectorRef);
 
   /****************************************************************** BINDINGS ******************************************************************/
 
@@ -57,11 +75,6 @@ export class NgStoreContainerComponent<T> implements OnDestroy {
   private _subscription: Subscription | null = null;
 
   /****************************************************************** LIFE CYCLE ******************************************************************/
-
-  constructor(
-    @Inject(NG_STORE_CONFIG) public config: StoreConfiguration,
-    private _cdr: ChangeDetectorRef
-  ) { }
 
   public ngOnChanges(): void {
     this._subscription?.unsubscribe();

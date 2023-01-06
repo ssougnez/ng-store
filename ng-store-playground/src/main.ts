@@ -1,6 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { bootstrapApplication } from '@angular/platform-browser';
-import { NG_STORE_CONFIG, StoreConfiguration } from '@ssougnez/ng-store';
+import { provideStore } from '@ssougnez/ng-store';
 
 import { AppComponent as FindComponent } from './examples/01_Find/app.component';
 import { initial as initialFindExample } from './examples/01_Find/state/app.state';
@@ -40,120 +40,94 @@ import { initial as initialContainerExample } from './examples/11_Container/stat
 import { AppComponent as ComponentComponent } from './examples/12_Component/app.component';
 import { initial as initialComponentExample } from './examples/12_Component/state/app.state';
 
-const component = ComponentComponent;
+const component = LoadComponent;
 
 const configurations = new Map();
 
-configurations.set(FindComponent, [{
-  provide: NG_STORE_CONFIG,
-  useValue: {
+configurations.set(FindComponent, [
+  provideStore({
     initialValue: initialFindExample,
     httpClientType: null
-  } as StoreConfiguration
-}]);
+  })
+]);
 
-configurations.set(SelectComponent, [{
-  provide: NG_STORE_CONFIG,
-  useValue: {
+configurations.set(SelectComponent, [
+  provideStore({
     initialValue: initialSelectExample,
     httpClientType: null
-  } as StoreConfiguration
-}]);
+  })
+]);
 
-configurations.set(IndexesComponent, [{
-  provide: NG_STORE_CONFIG,
-  useValue: {
+configurations.set(IndexesComponent, [
+  provideStore({
     initialValue: initialIndexesExample,
     httpClientType: null
-  } as StoreConfiguration
-}]);
+  })
+]);
 
-configurations.set(UpsertComponent, [{
-  provide: NG_STORE_CONFIG,
-  useValue: {
+configurations.set(UpsertComponent, [
+  provideStore({
     initialValue: initialUpsertExample,
     httpClientType: null
-  } as StoreConfiguration
-}]);
+  })
+]);
 
-configurations.set(RemoveComponent, [{
-  provide: NG_STORE_CONFIG,
-  useValue: {
+configurations.set(RemoveComponent, [
+  provideStore({
     initialValue: initialRemoveExample,
     httpClientType: null
-  } as StoreConfiguration
-}]);
+  })
+]);
 
 configurations.set(LoadComponent, [
-  {
-    provide: NG_STORE_CONFIG,
-    useValue: {
-      initialValue: initialLoadExample
-    } as StoreConfiguration,
-  },
+  provideStore({
+    initialValue: initialLoadExample
+  }),
   provideHttpClient()
 ]);
 
 configurations.set(LoadDependentComponent, [
-  {
-    provide: NG_STORE_CONFIG,
-    useValue: {
-      initialValue: initialLoadDependentExample
-    } as StoreConfiguration,
-  },
+  provideStore({
+    initialValue: initialLoadDependentExample
+  }),
   provideHttpClient()
 ]);
 
 configurations.set(PostComponent, [
-  {
-    provide: NG_STORE_CONFIG,
-    useValue: {
-      initialValue: initialPostExample
-    } as StoreConfiguration
-  },
+  provideStore({
+    initialValue: initialPostExample
+  }),
   provideHttpClient()
 ]);
 
 configurations.set(PutComponent, [
-  {
-    provide: NG_STORE_CONFIG,
-    useValue: {
-      initialValue: initialPutExample
-    } as StoreConfiguration
-  },
+  provideStore({
+    initialValue: initialPutExample
+  }),
   provideHttpClient()
 ]);
 
 configurations.set(DeleteComponent, [
-  {
-    provide: NG_STORE_CONFIG,
-    useValue: {
-      initialValue: initialDeleteExample
-    } as StoreConfiguration
-  },
+  provideStore({
+    initialValue: initialDeleteExample
+  }),
   provideHttpClient()
 ]);
 
 configurations.set(ContainerComponent, [
-  {
-    provide: NG_STORE_CONFIG,
-    useValue: {
-      initialValue: initialContainerExample,
-      defaultLoaderText: () => 'This might take a while...',
-      loaderComponent: LoaderComponent,
-      errorComponent: ErrorComponent
-    } as StoreConfiguration
-  },
+  provideStore({
+    initialValue: initialContainerExample,
+    defaultLoaderText: () => 'This might take a while...',
+    loaderComponent: LoaderComponent,
+    errorComponent: ErrorComponent
+  }),
   provideHttpClient()
 ]);
 
 configurations.set(ComponentComponent, [
-  {
-    provide: NG_STORE_CONFIG,
-    useValue: {
-      initialValue: initialComponentExample
-    } as StoreConfiguration
-  },
+  provideStore({
+    initialValue: initialComponentExample
+  }),
   provideHttpClient()
 ]);
 
