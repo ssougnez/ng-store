@@ -255,8 +255,7 @@
         The central concept of the store is "entities." As mentioned earlier, an entity is a basic object with only
         simple properties, and it must also have an "id" property of a specific type. To ensure that this requirement is
         met, all your entities must extend the <code class="language-typescript">BaseEntity&lt;T></code> base class,
-        where
-        "T" is the type of the "id" property. For example, the following is a "Pokemon" entity:
+        where "T" is the type of the "id" property. For example, the following is a "Pokémon" entity:
     </p>
 
     <pre>
@@ -270,8 +269,8 @@ export type Pokemon = BaseEntity&lt;number> & {{ '{' }}
     <p>
         It is important to note that these entities are not stored as-is in the store. In the example above, a value of
         type "Pokemon" will be stored as an <code class="language-typescript">Entity&lt;Pokemon></code> object. This
-        type
-        allows ng-store to efficiently store and retrieve values. For now, the most important thing to remember is that
+        type allows ng-store to efficiently store and retrieve values. For now, the most important thing to remember is
+        that
         an object of type <code class="language-typescript">Entity&lt;T></code> has a <code
               class="language-typescript">value</code> property that holds the actual <code
               class="language-typescript">Pokemon</code> object. The type <code
@@ -605,9 +604,9 @@ if (pokemon !== null) {{ '{' }}
         where select functions come in. They allow you to monitor for changes in the store and refresh your component as
         needed.
     </p>
-<!-- HERE -->
+
     <p>
-        Basically, select functions are the same than find functions but they return observables instead of values or
+        Basically, select functions are similar to find functions, but they return observables rather than values or
         entities. For example:
     </p>
 
@@ -616,11 +615,11 @@ if (pokemon !== null) {{ '{' }}
 public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntities(s => s.pokemons);</code></pre>
 
     <p>
-        As you can see, you use <code class="language-typescript">selectValues</code> and <code
-              class="language-typescript">selectEntities</code> the same way you use <code
+        As shown, you can use <code class="language-typescript">selectValues</code> and <code
+              class="language-typescript">selectEntities</code> in the same way as <code
               class="language-typescript">getValues</code> and <code class="language-typescript">getEntities</code>. The
-        only difference is that these functions return an observable instead of the values or entities. As for the
-        templates, the code is almost the same.
+        only difference is that these functions return observables instead of the actual values or entities. In terms of
+        templates, the code is largely the same.
     </p>
 
     <pre>
@@ -633,13 +632,14 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
 &lt;div *ngFor="let pokemon of entities$ | async; trackBy: trackByEntity">{{ '{' + '{' }} pokemon | json }}&lt;/div></code></pre>
 
     <p>
-        The only difference here is that you have to use the <code class="language-typescript">async</code> pipe.
+        The only difference here is that you must use the <code class="language-typescript">async</code> pipe.
     </p>
 
     <p>
-        Using the select functions, you ensure that your component will be notified each time a values that you
-        retrieved changes. Another big advantage is that you can use the <code class="language-typescript">async</code>
-        pipe to refresh the view of the component in a way supported by the "OnPush" change detection strategy.
+        By using the select functions, you can ensure that your component will be notified every time the values you
+        retrieved are changed. Another significant advantage is that you can use the <code
+              class="language-typescript">async</code> pipe to refresh the component's view in a way that is compatible
+        with the "OnPush" change detection strategy.
     </p>
 
     <p class="message information">
@@ -651,23 +651,23 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
     <h1 id="indexes">Indexes</h1>
 
     <p>
-        In the previous example, we saw how to select values based on another critera than their key. Even though it
-        works, it's not optimal for performances. For example:
+        In the previous example, we saw how to select values based on criteria other than their key. While this method
+        works, it is not optimal in terms of performance. For example:
     </p>
 
     <pre>
 <code class="language-typescript">public normal: Observable&lt;Pokemon[]> = this._store.selectValuesBy(s => s.pokemons, p => p.type === 'normal');</code></pre>
 
     <p>
-        The issue here is that when the store gets updated, it will emit its new value, therefore, the predicate above
-        will get executed for all pokemons once again.. If there are less than 10 000 items, it should be pretty fast,
-        however, if your store contains a huge amount of pokemons, it can be pretty intensive to examine all of them to
-        only return the normal ones. In this case, it is recommended to use indexes instead. Basically, an index is
-        a property of the object that the store uses to organize its content in an efficient way.
+        The issue with this approach is that when the store is updated, it will emit its new value and the predicate
+        will be executed for all pokemons again. While this may not be a problem for stores with fewer than 10,000
+        items, it can be resource-intensive to examine a large number of pokemons just to return the normal ones. In
+        these cases, it is recommended to use indexes instead. An index is a property of the object that the store uses
+        to efficiently organize its content.
     </p>
 
     <p>
-        The first thing to do in order to use indexes is to define them when using <code
+        To use indexes, the first step is to define them when using <code
               class="language-typescript">createEntities</code>:
     </p>
 
@@ -677,16 +677,17 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
 }</code></pre>
 
     <p>
-        Indexes are defined using the second parameter of <code class="language-typescript">createEntities</code> by
-        passing an array of property names that will be used as indexes. It can be tempting to define every property
-        in there but it is better to only defines the ones you'll really be using the most. Indeed, even though ng-store
-        supports multiple indexes, maintaining them has a small cost, so it's better to avoid it if you don't need it.
+        To define indexes in the second parameter of <code class="language-typescript">createEntities</code>, pass an
+        array of property names that will be used as indexes. While ng-store supports multiple indexes, it is generally
+        best to only include the ones that will be most frequently used, as maintaining multiple indexes can have a
+        small performance cost. Keep in mind that it is usually unnecessary to define every property as an index.
     </p>
 
     <p>
-        Now that we defined our index, we can simply used it via the functions <code
-              class="language-typescript">findValuesByIndex</code> or <code
-              class="language-typescript">selectValuesByIndex</code>:
+        To use the defined index, you can call either <code class="language-typescript">findValuesByIndex</code> or
+        <code class="language-typescript">selectValuesByIndex</code>. These functions allow you to quickly retrieve
+        values from the store using the defined index, which can improve the performance of your application by avoiding
+        the need to search through all entities to find the desired values.
     </p>
 
     <pre>
@@ -701,13 +702,13 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
     <h1 id="upsert">Upsert</h1>
 
     <p>
-        Updating the store is pretty straightforward. In most scenario, data to add or update in the store are
-        complete entities received by REST API, so you'll want to use the <code
-              class="language-typescript">upsertValue</code> or <code class="language-typescript">upsertValues</code>
-        functions. These functions add or update an object in the store based on its key. If an object with its key is
-        already in the store, it will be merged with the one you pass to these functions. The only difference between
-        these two functions is that <code class="language-typescript">upsertValues</code> expects an array and is used
-        to upsert one or multiple values.
+        To update the store, you can use either the <code class="language-typescript">upsertValue</code> or <code
+              class="language-typescript">upsertValues</code> functions. These functions allow you to add or update an
+        entity or multiple entities in the store based on their keys. If an entity with a matching key already exists in
+        the store, it will be merged with the entity you pass to these functions. Note that <code
+              class="language-typescript">upsertValues</code> expects an array and is used to upsert one or more
+        entities at a time, while <code class="language-typescript">upsertValue</code> is used to upsert a single
+        entity.
     </p>
 
     <p>
@@ -758,11 +759,18 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
 &lt;/div></code></pre>
 
     <p>
-        Nothing fancy, so far it simply selects all pokemons from the store, sort them in alphabetical order then
-        display them. There are also three buttons. The first one upserts a new value in the store, the second one
-        upserts a value that is already in the store (but with different data to show the effect) and the third
-        one updates a property of a value.
+        This component displays a list of all pokemons stored in the store, sorted in alphabetical order by the name
+        property. It also has three buttons that allow you to manipulate the data in the store:
     </p>
+
+    <ul>
+        <li>The first button upserts a new pokemon entity to the store.</li>
+        <li>
+            The second button upserts an existing pokemon entity with new data, to demonstrate the update behavior of
+            the <code class="language-typescript">upsertValue</code> function.
+        </li>
+        <li>The third button updates a specific property of an existing pokemon entity in the store.</li>
+    </ul>
 
     <p>
         Here is the code of the first button:
@@ -780,8 +788,8 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
 }</code></pre>
 
     <p>
-        It does not get simpler than this. You just pass the new value to add in the store, and it gets added. Updating
-        an existing value with another one is also very simple:
+        This couldn't be easier. Simply pass the value you want to add to the store and it will be added. If you want to
+        update an existing value, it's just as simple - pass the updated value to the store.
     </p>
 
     <pre>
@@ -796,9 +804,10 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
 }</code></pre>
 
     <p>
-        Here, we simply update the value with key 1 with a new value. However, it can happen that you don't have an
-        object containing all the data of the entity you want to update, in this case, you can use the <code
-              class="language-typescript">updateValueByKey</code> function to update an entity the way you want:
+        In this example, we're updating the value with key 1 with a new value. However, if you don't have an object
+        containing all of the data for the entity you want to update, you can use the <code
+              class="language-typescript">updateValueByKey</code> function to make
+        custom updates to the entity.
     </p>
 
     <pre>
@@ -807,7 +816,7 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
 }</code></pre>
 
     <p>
-        Let see what the component displays at first:
+        Initially, let's see what the component displays:
     </p>
 
     <div class="img">
@@ -815,7 +824,7 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
     </div>
 
     <p>
-        Now, let's click on the first button:
+        Next, let's click on the first button:
     </p>
 
     <div class="img">
@@ -823,8 +832,8 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
     </div>
 
     <p>
-        Vulpix got added to the list and as we're using an observable, the view got refreshed automatically even though
-        we're using the "OnPush" change detection strategy. Now, push the second button.
+        Vulpix was added to the list and, because we're using an observable, the view was automatically refreshed even
+        though we're using the "OnPush" change detection strategy. Now, go ahead and click the second button.
     </p>
 
     <div class="img">
@@ -832,7 +841,7 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
     </div>
 
     <p>
-        Pikachu disappeared and got replaced by Zubat. And finally, the third button:
+        Pikachu was replaced by Zubat. And finally, click the third button:
     </p>
 
     <div class="img">
@@ -840,10 +849,10 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
     </div>
 
     <p>
-        Zubat got updated and became Jigglypuff.
+        Zubat was updated and changed into Jigglypuff.
     </p>
 
-    <p>Besides these functions, you can also use the following ones:</p>
+    <p>In addition to these functions, you can also use the following ones:</p>
 
     <ul>
         <li><strong>updateEntitiesBy</strong>: Update <strong>entities</strong> based on a predicate.</li>
@@ -860,7 +869,7 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
     <h1 id="remove">Remove</h1>
 
     <p>
-        Removing values from the store can be done using these two functions:
+        To remove values from the store, you can use these two functions:
     </p>
 
     <ul>
@@ -869,7 +878,7 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
     </ul>
 
     <p>
-        For example, to remove the values with key 1 or 2:
+        For instance, to remove the values with key 1 or 2:
     </p>
 
     <pre>
@@ -895,27 +904,26 @@ public entities$: Observable&lt;Entity&lt;Pokemon>[]> = this._store.selectEntiti
     <h1 id="load">Load</h1>
 
     <p>
-        So far, we saw how to use the store in a synchronous way, however, in a real life scenario, data in the
-        store get most of the time loaded using REST API in an asynchronous way. You could do it with what we saw above
-        but ng-store comes with support for asynchronous loading of data. It also provides some components to
-        simplify the UI. Let's start with a simple use case:
+        So far, we've covered how to use the store in a synchronous manner. However, in a real-world scenario, data in
+        the store is often loaded asynchronously from a REST API. While you can do this with what we've already learned,
+        ng-store provides built-in support for asynchronous data loading, as well as components to make it easier to
+        work with in the UI. Let's start with a simple example:
     </p>
 
     <ul>
-        <li>Pokemons are loaded using a call to a REST API.</li>
-        <li>We want to load all the pokemons but not all of their properties, to save bandwidth (partial load).</li>
-        <li>We want a component to display a pokemon based on its id (all its properties).</li>
+        <li>Pokemons are loaded from a REST API.</li>
+        <li>We want to load all the pokemons, but only some of their properties to save bandwidth (partial load).</li>
+        <li>We want a component that displays a pokemon based on its key, including all of its properties.</li>
     </ul>
 
     <p>
-        For those who want to run the examples from the playground, I'm using the "json-server" library to create a fake
-        web service. You can start it by running the command <code class="language-typescript">yarn json</code> in
-        the playground directory. All the call have a latency of one second in order to see what happens during the data
-        loading.
+        To run the examples in the playground, I'm using the "json-server" library to create a fake web service. You can
+        start it by running the command <code class="language-typescript">yarn json</code> in the playground directory.
+        All of the calls have a latency of one second so you can observe what happens during the data loading process.
     </p>
 
     <p>
-        The first thing to do to be able to use HTTP calls is to configure "ng-store" in that way:
+        To use HTTP calls with ng-store when using the module approach, you'll need to configure it as follows::
     </p>
 
     <pre>
@@ -937,14 +945,19 @@ export class AppModule {{ '{' }} }
 </code></pre>
 
     <p>
-        We removed the "httpClientType" property to instruct Angular to use the default <code
-              class="language-typescript">HttpClient</code> and we also imported the <code
-              class="language-typescript">HttpClientModule</code>.
+        However, if you're using a standalone application, you'll need to configure it as follows:
     </p>
 
+    <pre>
+<code class="language-typescript">provideStore({{ '{' }}
+  initialValue: initialLoadExample
+}),
+provideHttpClient()
+</code></pre>
+
     <p>
-        Now, we're going to create a <code class="language-typescript">PokemonService</code> to do the heavy lifting of
-        loading data:
+        Next, we'll create a <code class="language-typescript">PokemonService</code> to handle the process of loading
+        data:
     </p>
 
     <pre>
@@ -957,25 +970,23 @@ export class PokemonService {{ '{' }}
 
 }</code></pre>
 
-    <p>
-        As we saw earlier, you could make the HTTP call by yourself and handle the loading, error and success states,
-        but
-        "ng-store" provides a component called <code class="language-typescript">ngs-container</code> to help you with
-        that. Here, we'll see the most basic usage of this component, but you can find more information about it <a
-           href="#ngs-container">later in this documentation</a>.
-    </p>
+    <p>Earlier, we discussed how you can make the HTTP call yourself and manage the loading, error, and success states
+        manually. However, ng-store provides a component called <code class="language-typescript">ngs-container</code>
+        to simplify this process. In this section, we'll cover the basic usage of <code
+              class="language-typescript">ngs-container</code>, but you can find more information about it later in this
+        documentation.</p>
 
     <p>
-        This component works by using two observables:
+        The <code class="language-typescript">ngs-container</code> component operates using two observables:
     </p>
 
     <ul>
-        <li><strong>query$</strong>: Used to perform the HTTP call.</li>
-        <li><strong>data$</strong>: Retrieves the data you want to use in your template from the store.</li>
+        <li><strong>query$</strong>: Performs the HTTP call.</li>
+        <li><strong>data$</strong>: Retrieves data from the store to use in the template.</li>
     </ul>
 
     <p>
-        In our case, we'll start by implementing the function used to fetch data using a REST call in our service:
+        For this example, we'll begin by implementing the function used to fetch data from a REST API in our service:
     </p>
 
     <pre>
@@ -984,8 +995,8 @@ export class PokemonService {{ '{' }}
 }</code></pre>
 
     <p>
-        The <code class="language-typescript">loadAllEntities</code> function must be used to load all the entities from
-        the server and put them in a store section. This function expects at most four parameters:
+        The <code class="language-typescript">loadAllEntities</code> function is used to load all entities from the
+        server and store them in a specific section. It can accept up to four parameters:
     </p>
 
     <ul>
@@ -993,30 +1004,29 @@ export class PokemonService {{ '{' }}
             <strong>url</strong>: URL to call to retrieve the data.
         </li>
         <li>
-            <strong>root</strong>: predicate used to select the section of the store that will store the fetched data.
+            <strong>root</strong>: Predicate used to select the section of the store that will store the fetched data.
         </li>
         <li>
-            <strong>entityLoaded</strong>: Define whether the loaded entities are complete or not (more on that a bit
+            <strong>entityLoaded</strong>: Indicates whether the loaded entities are complete or not (more on that
             later).
         </li>
         <li>
-            <strong>force</strong>: When data are loaded and put in the store, subsequents call to <code
-                  class="language-typescript">loadAllEntities</code> for the same section will return them and not call
-            the REST API again. However, you can force the store to refetch the data by setting this parameter to <code
-                  class="language-typescript">true</code>.
+            <strong>force</strong>: When data are loaded and stored in the store, subsequent calls to <code
+                  class="language-typescript">loadAllEntities</code> for the same section will return the stored data
+            instead of calling the REST API again. However, you can force the store to refetch the data by setting this
+            parameter to <code class="language-typescript">true</code>.
         </li>
     </ul>
 
     <p>
         In this case, we use this function to call the web service at the specified URL and store the values returned by
-        it in the "pokemons" section of the store. Moreover, as this route only returns <strong>some</strong> properties
-        of
-        the pokemons, we set the third parameter to <strong>false</strong> in order to indicate to the store that
-        entities are loaded but not completely (we'll use that fact a bit later).
+        it in the "pokemons" section of the store. Additionally, since this route only returns <strong>some</strong>
+        properties of the pokemons, we set the third parameter to <strong>false</strong> to indicate to the store that
+        the entities are partially loaded (we'll use this fact later).
     </p>
 
     <p>
-        Now that we have this function, we can update the code of our component like so:
+        Now that we have this function, we can update the code of our component like this:
     </p>
 
     <pre>
@@ -1038,11 +1048,13 @@ export class PokemonService {{ '{' }}
 </code></pre>
 
     <p>
-        We simply set the <code class="language-typescript">query$</code> observable on the value returned by our
-        service function and the <code class="language-typescript">data$</code> on a selection from the store. We also
-        use the <code class="language-typescript">map</code> operator to sort the result based on the pokemons' name.
-        Once we have these observables, we can use them in the template along with the <code
-              class="language-typescript">ngs-container</code>. <code class="language-typescript">selectedId</code>
+        We set the <code class="language-typescript">query$</code> observable to the value returned by our service
+        function and the <code class="language-typescript">data$</code> observable to a
+        selection from the store. We also use the <code class="language-typescript">map</code> operator to sort the
+        result based on the pokemons' name. Once we
+        have these observables, we can use them in the template along with the <code
+              class="language-typescript">ngs-container</code> component. The <code
+              class="language-typescript">selectedId</code>
         variable will be used to display a pokemon in another component.
     </p>
 
@@ -1061,25 +1073,31 @@ export class PokemonService {{ '{' }}
 &lt;/ngs-container>
 </code></pre>
 
-    <p>
-        Basically, the <code class="language-typescript">ngs-container</code> expects the two observables we mentionned,
-        instantiates a <code class="language-typescript">ng-template</code> and passes the values emitted by <code
-              class="language-typescript">data$</code> observable in its implicit variable. Here, we store these data
-        in the variable <code class="language-typescript">pokemons</code> then we use it to display all the pokemons. We
-        also display a small icon that sets the value of <code class="language-typescript">selectedId</code> on the
-        pokemon id.
+    <p class="message information">
+        If you're using standalone components, you'll need to import <code
+              class="language-typescript">NgStoreContainerComponent</code>.
     </p>
 
     <p>
-        One of the advantage of this component is that it handles loading and error states. Indeed, if the HTTP call
-        fails, the container component catches it and can do something with the error. By default, it simply displays
-        it. However, you can configure the container to display the error in a custom way. As for the loading
-        indicator, the json server is configured to have a latency of one second and during this second, you can see
-        that the <code class="language-typescript">ngs-container</code> displays "<em>Loading...</em>". There is
-        different possibilities for the loading indicator format but here, we set the property <code
-              class="language-typescript">loaderType</code> on <code class="language-typescript">text</code> to simply
-        display a loading sentence. We'll see in the <a href="#ngs-container">ngs-container</a> chapter how to customize
-        this loading indicator. Let's confirm all of this by running our application with the JSON server turned off:
+        The <code class="language-typescript">ngs-container</code> component expects the two observables we mentioned,
+        instantiates an <code class="language-typescript">ng-template</code>, and passes
+        the values emitted by the <code class="language-typescript">data$</code> observable to its implicit variable. In
+        this case, we store these data in the <code class="language-typescript">pokemons</code> variable and use it to
+        display all the pokemons. We also display a small icon that sets the value of <code
+              class="language-typescript">selectedId</code> to the pokemon id.
+    </p>
+
+    <p>
+        One of the advantages of the ngs-container component is that it handles loading and error states. If the HTTP
+        call fails, the container component catches it and can do something with the error. By default, it simply
+        displays it. However, you can configure the container to display the error in a custom way. As for the loading
+        indicator, the json server is configured to have a latency of one second and during this time, the <code
+              class="language-typescript">ngs-container</code> component displays "<em>Loading...</em>". There are
+        different possibilities for the loading indicator format, but in this case, we set the <code
+              class="language-typescript">loaderType</code> property to <code class="language-typescript">text</code> to
+        simply display a loading sentence. We'll see in the <a href="#ngs-container">ngs-container</a> chapter how to
+        customize this loading indicator. Let's confirm all of this by running our application with the JSON server
+        turned off:
     </p>
 
     <div class="img">
@@ -1087,9 +1105,8 @@ export class PokemonService {{ '{' }}
     </div>
 
     <p>
-        The container correctly caught the error and displayed it. Now, let's start the JSON server and refresh our
-        page.
-        At first, we can see:
+        The <code class="language-typescript">ngs-container</code> component correctly caught the error and displayed
+        it. Now, let's start the JSON server and refresh our page. Initially, we can see:
     </p>
 
     <div class="img">
@@ -1105,15 +1122,15 @@ export class PokemonService {{ '{' }}
     </div>
 
     <p>
-        So, as you can see, the <code class="language-typescript">ngs-container</code> really handles everything you
-        need to fetch the data and display what needs to be displayed depending on the current state of the request.
+        As you can see, the <code class="language-typescript">ngs-container</code> component handles everything you need
+        to fetch the data and display what needs to be displayed based on the current state of the request.
     </p>
 
     <p>
-        We'll go a little further by creating a component that will receive the id of a pokemon in input and display
-        all its data. As we said earlier, the call we used in the main component only loaded some of the properties.
-        Now, we'll see how to load all the properties of the pokemon with the specified id. First, let's add a method
-        to our service in order to load a pokemon based on its id.
+        We'll go further by creating a component that will receive the id of a pokemon as input and display all its
+        data. As we said earlier, the call we used in the main component only loaded some of the properties. Now, we'll
+        see how to load all the properties of the pokemon with the specified id. First, let's add a method to our
+        service to load a pokemon based on its id.
     </p>
 
     <pre>
@@ -1123,24 +1140,24 @@ export class PokemonService {{ '{' }}
 </code></pre>
 
     <p class="message information">
-        This route fetches a pokemon based on its id and returns <strong>all its properties</strong>.
+        This route fetches a pokemon based on its id and returns all of its properties.
     </p>
 
     <p>
-        <code class="language-typescript">loadEntityByKey</code> calls a route in order to load an entity if it is not
-        yet in the store or if it is in the store but is flagged as not completely loaded, which is the case here.
-        Indeed, we called <code class="language-typescript">loadAllEntities</code> by passing <code
-              class="language-typescript">false</code> as the third parameter, indicating this way that loaded entities
-        were not complete. Note that <code class="language-typescript">loadEntityByKey</code> also set the entity it
-        loads as completely loaded (except if you pass <code class="language-typescript">false</code> in its fourth
-        parameter), meaning that calling twice this function for the same entity will call the REST API
-        only once. Moreover, and that's the case for all loading functions of "ng-store", if multiple components try to
-        load an entity at the exact same time, only one call is made but the entity will be available for all
-        components.
+        The <code class="language-typescript">loadEntityByKey</code> function calls a route to load an entity if it is
+        not yet in the store or if it is in the store but is flagged as not completely loaded, which is the case here.
+        We called <code class="language-typescript">loadAllEntities</code> by passing <code
+              class="language-typescript">false</code> as the third parameter, indicating that the loaded entities were
+        not complete. Note that <code class="language-typescript">loadEntityByKey</code> also sets the entity it loads
+        as completely loaded (unless you pass <code class="language-typescript">false</code> in its fourth parameter).
+        This means that calling this function twice for the same entity will only call the REST API once. Additionally,
+        for all loading functions in "ng-store," if multiple components try to load an entity at the same time, only one
+        call is made but the entity will be available for all components.
     </p>
 
     <p>
-        Now that we have this function, we can use it in a new component:
+        Now that we have this function, we can use it in a new component to fetch and display the full data for a
+        pokemon based on its id:
     </p>
 
     <pre>
@@ -1151,7 +1168,7 @@ export class PokemonService {{ '{' }}
   standalone: true,
   imports: [
     JsonPipe,
-    NgStoreModule
+    NgStoreContainerComponent
   ]
 })
 export class PokemonComponent {{ '{' }}
@@ -1172,9 +1189,9 @@ export class PokemonComponent {{ '{' }}
 </code></pre>
 
     <p>
-        The idea here is the same than for the first component except that the <code
-              class="language-typescript">query$</code> and <code class="language-typescript">data$</code> observables
-        are defined in the setter of the id input. Now we can use them in the template:
+        The idea for this component is similar to the first one, but the <code class="language-typescript">query$</code>
+        and <code class="language-typescript">data$</code> observables are defined in the setter of the id input. These
+        observables can then be used in the template to display the full data for a pokemon based on its id:
     </p>
 
     <pre>
@@ -1188,7 +1205,7 @@ export class PokemonComponent {{ '{' }}
 </code></pre>
 
     <p>
-        The only thing left to do is adding the following line in the template of the main component:
+        The only step remaining is to add the following line in the template of the main component:
     </p>
 
     <pre>
@@ -1197,8 +1214,8 @@ export class PokemonComponent {{ '{' }}
 </code></pre>
 
     <p>
-        And that's it. Let's have a look at the network tab of the console in order to see what happens in terms of HTTP
-        calls. First, when the application starts:
+        And that's it! Let's take a look at the network tab in the console to see what happens in terms of HTTP calls
+        when the application starts:
     </p>
 
     <div class="img">
@@ -1223,9 +1240,9 @@ export class PokemonComponent {{ '{' }}
     </div>
 
     <p>
-        As you can see, the call for the second pokemon is correctly done, however, the call for the first pokemon is
-        not done another time. Indeed, as the entity is in the store and is completely loaded, it does not get loaded
-        once again. Note that you can force the query (to refresh data maybe) by passing <code
+        As you can see, the call for the second Pokémon is correctly made, but the call for the first Pokémon is not
+        made again. This is because the entity is already in the store and is fully loaded, so it does not need to be
+        loaded again. Note that you can force the query to refresh the data by passing <code
               class="language-typescript">true</code> as the fifth parameter.
     </p>
 
@@ -1236,16 +1253,16 @@ export class PokemonComponent {{ '{' }}
     </p>
 
     <p>
-        Let's spice things up a bit by checking how to load dependent data. Say that this time, our web services looks a
-        bit more like what you would expect from a relational REST API. Meaning that instead of having the types of the
-        pokemons as a string property, you have a route returning all the types and the property <code
-              class="language-typescript">type</code> is replaced by the property <code
-              class="language-typescript">typeId</code> which contains the id of the type.
+        Let's add some complexity to our example by simulating a REST API that uses a relational database. Instead of
+        storing the type of each pokemon as a string property, we will have a separate route that returns all available
+        types. In this case, the <code class="language-typescript">type</code> property will be replaced by the <code
+              class="language-typescript">typeId</code> property, which contains the ID of the
+        type for each pokemon.
     </p>
 
     <p>
-        Moreover, we want to update our main component to display all the pokemon types and then, in another component,
-        a list of all the pokemons of the selected type. Let's start by creating our models.
+        Furthermore, we want to update our main component to display a list of all the pokemon types and, in a separate
+        component, a list of all the pokemons for the selected type. First, let's create our models.
     </p>
 
     <p>
@@ -1286,8 +1303,8 @@ export const initial: AppState = {{ '{' }}
 </code></pre>
 
     <p>
-        Now, it's time to update our service. The first function we'll implement is the one responsible of loading all
-        the types in the store.
+        Now, it's time to update our service. The first function we will implement is responsible for loading all the
+        types into the store.
     </p>
 
     <pre>
@@ -1297,7 +1314,7 @@ export const initial: AppState = {{ '{' }}
 </code></pre>
 
     <p>
-        Let's head to our main component to do the necessary changes to display all these types:
+        Next, let's make the necessary changes in our main component to display all these types:
     </p>
 
     <pre>
@@ -1337,13 +1354,11 @@ export const initial: AppState = {{ '{' }}
 </code></pre>
 
     <p>
-        Nothing much different so far. The only difference is that the component showing all the pokemons of the
-        selected
-        type is called <code class="language-typescript">app-pokemon-by-type</code> and that's in this component that
-        we'll learn how to load dependent data. What I call dependant data are data that depends on another entity. In
-        this case, we'll load the pokemon depending on their type. The first thing to do in order to load them easily
-        with
-        the store is to add a property to our "type" model:
+        The only difference so far is that the component displaying all the pokemons of the selected type is called
+        <code class="language-typescript">app-pokemon-by-type</code>, and it is in this component that we will learn how
+        to load dependent data. By "dependent data," I mean data that depends on another entity. In this case, we will
+        load the pokemons based on their type. To make it easier to load the pokemons with the store, we should first
+        add a property to our "type" model:
     </p>
 
     <pre>
@@ -1355,15 +1370,16 @@ export const initial: AppState = {{ '{' }}
 </code></pre>
 
     <p>
-        The property <code class="language-typescript">pokemonsLoaded</code> will be used by the store to determine
-        whether the pokemons of that type have already been loaded or not and load them accordingly. Currently, this
-        property is not optional and must be defined, so if you happen to insert data in the store manually, simply set
-        it to <code class="language-typescript">false</code> and you'll be fine.
+        The <code class="language-typescript">pokemonsLoaded</code> property will be used by the store to determine
+        whether the pokemons of that type have already been loaded. If the property is not defined, the store will
+        assume that the pokemons have not been loaded and will load them accordingly. Currently, this property is not
+        optional and must be defined. If you need to manually insert data into the store, you should set this property
+        to <code class="language-typescript">false</code> to indicate that the pokemons have not been loaded.
     </p>
 
     <p>
-        Now, it's time to update our service to implement a function that will load pokemons from a specific type if
-        they were not loaded yet.
+        Now, it's time to update our service to implement a function that will load pokemons for a specific type if they
+        have not been loaded yet.
     </p>
 
     <pre>
@@ -1381,20 +1397,20 @@ public loadPokemonByType(id: number): Observable&lt;Pokemon[]> {{ '{' }}
 </code></pre>
 
     <p>
-        So basically, we use the <code class="language-typescript">loadEntities</code> function to load entities based
-        on the property of another one. The two first parameters are the same than for the others functions, what's
-        interesting is the third and fourth one. The third one allows you to find the depending entity. Most of the
-        time, you'll use the utility function <code class="language-typescript">findStoreValueByKey</code> to do so.
-        Simply pass it the section of the store where you want to find the depending entity and its id. Then, the fourth
-        parameter is simply the name of the property to use in order to define whether the entities have been loaded or
-        not. This has to be passed as a string to allow the store to update this property as he wishes to (which means
-        that you should never update the value of this property by yourself). The last parameter is the same as for the
-        others functions and determines whether entities are completely or partially loaded (in that case, they are only
+        We can use the <code class="language-typescript">loadEntities</code> function to load entities based on the
+        property of another entity. The first two parameters are the same as in the other functions. The third and
+        fourth parameters are what make this function unique. The third parameter allows you to find the dependent
+        entity. In most cases, you will use the <code class="language-typescript">findStoreValueByKey</code> utility
+        function to do so. Simply pass it the section of the store where you want to find the dependent entity and its
+        ID. The fourth parameter is the name of the property that will be used to determine whether the entities have
+        been loaded or not. This must be passed as a string to allow the store to update this property as needed (which
+        means you should never update the value of this property yourself). The last parameter is the same as in the
+        other functions and determines whether the entities are fully or partially loaded (in that case, they are only
         partially loaded).
     </p>
 
     <p>
-        Now that we have this, we can implement the component showing the pokemons of a certain type:
+        Now that we have this function, we can implement the component that displays the pokemons for a specific type:
     </p>
 
     <pre>
@@ -1417,10 +1433,6 @@ public loadPokemonByType(id: number): Observable&lt;Pokemon[]> {{ '{' }}
 }
 </code></pre>
 
-    <p>
-        And the template:
-    </p>
-
     <pre>
 <code class="language-html">&lt;ngs-container [query$]="query$"
                [data$]="pokemons$"
@@ -1432,7 +1444,7 @@ public loadPokemonByType(id: number): Observable&lt;Pokemon[]> {{ '{' }}
 </code></pre>
 
     <p>
-        And that's it, folks! If you run your application, you'll have:
+        And that's it! If you run your application, you will have:
     </p>
 
     <div class="img">
@@ -1440,7 +1452,7 @@ public loadPokemonByType(id: number): Observable&lt;Pokemon[]> {{ '{' }}
     </div>
 
     <p>
-        And when clicking on the eye next to a type:
+        And when you click on the eye icon next to a type:
     </p>
 
     <div class="img">
@@ -1448,18 +1460,19 @@ public loadPokemonByType(id: number): Observable&lt;Pokemon[]> {{ '{' }}
     </div>
 
     <p>
-        Like for the other functions, it's important to note that:
+        As with the other functions, it's important to note that:
     </p>
 
     <ul>
         <li>
-            Entities are only loaded if they were not yet loaded. You can bypass this behavior by using the
-            <code class="language-typescript">force</code> parameter.
+            Entities are only loaded if they have not yet been loaded. You can override this behavior by using the <code
+                  class="language-typescript">force</code> parameter.
         </li>
         <li>
-            If multiple components try to load the same dependent data at the same moment, only one call is made.
+            If multiple components try to load the same dependent data at the same time, only one call is made.
         </li>
     </ul>
+
 
     <p class="message information">
         You can find the code of this section in <a
@@ -1468,18 +1481,18 @@ public loadPokemonByType(id: number): Observable&lt;Pokemon[]> {{ '{' }}
     </p>
 
     <p>
-        There is one more function that you could use to load data in the store <code
-              class="language-typescript">loadEntitiesOnce</code>. Basically, this function loads entities only once.
-        The store uses the URL of the REST API to know whether the entities have already been loaded or not. This
-        function is pretty straightforward so I won't show an example here but if you need it, you can still create an
-        issue and I'll update the documentation.
+        There is one more function that you can use to load data into the store: <code
+              class="language-typescript">loadEntitiesOnce</code>. This function loads
+        entities only once. The store uses the URL of the REST API to determine whether the entities have already been
+        loaded or not. This function is fairly straightforward, so I won't provide an example here. However, if you need
+        to use it, you can create an issue and I'll update the documentation.
     </p>
 
     <h1 id="post">Post</h1>
 
     <p>
-        Now that we saw how to load data with the store, we are going to see how to create them. Let's start by creating
-        the following models:
+        Now that we've seen how to load data with the store, let's move on to creating data. We'll start by creating the
+        following models:
     </p>
 
     <pre>
@@ -1502,11 +1515,11 @@ export type PokemonCreationData = {{ '{' }}
 
     <ul>
         <li><strong>Pokemon</strong>: The type of our entities.</li>
-        <li><strong>PokemonCreationData</strong>: Type of the data sent to the server to create a new pokemon.</li>
+        <li><strong>PokemonCreationData</strong>: The type of the data sent to the server to create a new pokemon.</li>
     </ul>
 
     <p>
-        In the service, we'll have one function used to retrieve all the pokemons:
+        In the service, we'll have one function for retrieving all the pokemons:
     </p>
 
     <pre>
@@ -1561,9 +1574,10 @@ export type PokemonCreationData = {{ '{' }}
 </code></pre>
 
     <p>
-        So far, nothing new. However, we put a component called <code class="language-xml">app-pokemon-add-form</code>
-        that we'll use to create new pokemons. Note that the goal is to automatically refresh the list of pokemons upon
-        creation. Here is a first version of the code of this component:
+        So far, there is nothing new. However, we have added a component called <code
+              class="language-xml">app-pokemon-add-form</code> that we will use to
+        create new pokemons. Note that the goal is to automatically refresh the list of pokemons after a new one is
+        created. Here is the initial version of the code for this component:
     </p>
 
     <pre>
@@ -1631,9 +1645,9 @@ export class PokemonAddFormComponent implements OnInit {{ '{' }}
 </code></pre>
 
     <p>
-        Basically, we created a simple form using reactive forms and bound the submit event of the form to the <code
-              class="language-typescript">add</code> function. Before implementing this function, we'll create the <code
-              class="language-xml">addPokemon</code> function in the service that will use the store to perform the
+        We have created a simple form using reactive forms and bound the submit event of the form to the <code
+              class="language-typescript">add</code> function. Before implementing this function, we will create the
+        <code class="language-xml">addPokemon</code> function in the service that will use the store to perform the
         creation.
     </p>
 
@@ -1644,19 +1658,19 @@ export class PokemonAddFormComponent implements OnInit {{ '{' }}
 </code></pre>
 
     <p>
-        Creating a new entity with the store is really easy, you just have to call the <code
+        Creating a new entity with the store is very easy. You just need to call the <code
               class="language-typescript">postEntity</code> function with the following parameters:
     </p>
 
     <ul>
-        <li><strong>url</strong>: POST URL to call to create the entity.</li>
-        <li><strong>root</strong>: Selector used to update the adding state of the entity list (more on that a bit
-            later).</li>
-        <li><strong>data</strong>: Payload sent to the server to create the entity.</li>
+        <li><strong>url</strong>: The POST URL to call to create the entity.</li>
+        <li><strong>root</strong>: A selector used to update the adding state of the entity list (more on that later).
+        </li>
+        <li><strong>data</strong>: The payload sent to the server to create the entity.</li>
     </ul>
 
     <p>
-        Now, it's just a matter of calling this function in our component:
+        Now, we just need to call this function in our component:
     </p>
 
     <pre>
@@ -1676,19 +1690,21 @@ export class PokemonAddFormComponent implements OnInit {{ '{' }}
 </code></pre>
 
     <p>
-        If you were to test the component, you'd notice that it works... ish... Two details are a bit annoying
-        here:
+        If you test the component, you will notice that it works... sort of. There are two annoying details here:
     </p>
 
     <ul>
-        <li>The pokemon gets created but a refresh is required to actually see it.</li>
-        <li>The button is enabled during the REST call, meaning that a user could potentially clicks multiple times on
-            the button and therefore create the pokemon more than once.</li>
+        <li>
+            The pokemon gets created, but the page needs to be refreshed to see it.
+        </li>
+        <li>
+            The button is enabled during the REST call, which means that a user could potentially click the button
+            multiple times and create the same pokemon more than once.
+        </li>
     </ul>
 
     <p>
-        The first point is really easy to solve with the store. You just need to update the function in the service like
-        so:
+        The first point is easy to solve with the store. You just need to update the function in the service as follows:
     </p>
 
     <pre>
@@ -1702,15 +1718,15 @@ export class PokemonAddFormComponent implements OnInit {{ '{' }}
 </code></pre>
 
     <p>
-        Basically, we just piped the observable returned by the function to add the value emitted in the "pokemons"
-        section
-        of the store. Of course, this will only work if, like JSON server, your REST API returns the created entity. If
-        not, you'll have to find another way to refresh your store. Here are some ideas:
+        Basically, we just piped the observable returned by the function to add the value emitted to the "pokemons"
+        section of the store. This will only work if your REST API returns the created entity, like JSON server does. If
+        your REST API does not return the created entity, you'll need to find another way to refresh your store. Here
+        are a few ideas:
     </p>
 
     <ul>
         <li>
-            If you web service does not return any interesting value (which it shouldn't), pipe the call to <code
+            If your web service does not return any useful value (which it shouldn't), you can pipe the call to <code
                   class="language-typescript">postEntity</code> with a <code
                   class="language-typescript">switchMap</code> to <code
                   class="language-typescript">loadAllEntities</code> with the <code
@@ -1723,15 +1739,15 @@ export class PokemonAddFormComponent implements OnInit {{ '{' }}
                   class="language-typescript">loadEntityByKey</code> with this id.
         </li>
         <li>
-            If, like me, you love using web socket connections, call <code
-                  class="language-typescript">upsertValue</code> in the callback function handling the creation of a
+            If you prefer to use web socket connections, you can call <code
+                  class="language-typescript">upsertValue</code> in the callback function that handles the creation of a
             pokemon.
         </li>
     </ul>
 
     <p>
-        So if you try your component now, you'll notice that the list of pokemons get refresh automatically. However,
-        the button is still enabled during the call. One way to fix this would be to do this:
+        If you try your component now, you will notice that the list of pokemons is automatically refreshed. However,
+        the button is still enabled during the call. One way to fix this is to do the following:
     </p>
 
     <pre>
@@ -1761,10 +1777,10 @@ public add() {{ '{' }}
 </code></pre>
 
     <p>
-        This would work perfectly fine, however, it's a little verbose, especially if you have to do this every time you
-        create a component creating data. A good alternative consists in relying on the store. Indeed, when using <code
+        This method would work, but it can be verbose, especially if you have to do this every time you create a
+        component that creates data. A better option is to use the store. When you use <code
               class="language-typescript">postEntity</code>, the store automatically maintains the "adding" state of the
-        store section you're using. In other words, you can achieve the same like this:
+        relevant store section. This allows you to achieve the same result with less code:
     </p>
 
     <pre>
@@ -1786,7 +1802,7 @@ public add() {{ '{' }}
 </code></pre>
 
     <p>
-        And now, you can use this obervable in the template:
+        You can now use this observable in the template:
     </p>
 
     <pre>
@@ -1795,7 +1811,8 @@ public add() {{ '{' }}
 </code></pre>
 
     <p>
-        At the end, you only save two lines of code but on the long run, this feature comes very handy.
+        While this may only save a couple lines of code in the short term, this feature becomes very useful in the long
+        run.
     </p>
 
     <p class="message information">
@@ -1807,9 +1824,9 @@ public add() {{ '{' }}
     <h1 id="put">Put</h1>
 
     <p>
-        To demonstrate how to update data with the store, we'll start with the code of <a
+        To show how to update data using the store, we will start with the code from <a
            href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src/examples/08_Post">the previous
-            example</a>. First, we need to change the model containing updated data:
+            example</a>. First, we need to modify the model that contains the updated data:
     </p>
 
     <pre>
@@ -1821,10 +1838,10 @@ public add() {{ '{' }}
 </code></pre>
 
     <p>
-        the <code class="language-typescript">id</code> property is a number or <code
-              class="language-typescript">null</code> as it can contain both values; a
-        number when you want to update an existing entity or <code class="language-typescript">null</code> when you want
-        to create it. As for the service:
+        The <code class="language-typescript">id</code> property can be either a number or <code
+              class="language-typescript">null</code>, because it can contain
+        either an existing entity ID for updates or <code class="language-typescript">null</code> for new entities. As
+        for the service:
     </p>
 
     <pre>
@@ -1844,7 +1861,7 @@ public add() {{ '{' }}
 </code></pre>
 
     <p>
-        Now, let's update the main component in order to display an edit icon next to the names of the pokemons:
+        Now, let's modify the main component to display an edit icon next to the names of the pokemons:
     </p>
 
     <pre>
@@ -1885,7 +1902,7 @@ public add() {{ '{' }}
     &lt;/ng-template>
 &lt;/ngs-container>
 </code></pre>
-
+<!-- HERE -->
     <p>
         Here, the only subtility is on the click event of the icon. Basically, it changes the <code
               class="language-typescript">selectedId</code> variable on the id of the pokemon to edit or <code
