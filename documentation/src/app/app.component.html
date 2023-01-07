@@ -1902,16 +1902,17 @@ public add() {{ '{' }}
     &lt;/ng-template>
 &lt;/ngs-container>
 </code></pre>
-<!-- HERE -->
+
     <p>
-        Here, the only subtility is on the click event of the icon. Basically, it changes the <code
-              class="language-typescript">selectedId</code> variable on the id of the pokemon to edit or <code
-              class="language-typescript">null</code> if <code class="language-typescript">selectedId</code> already
-        contains it. It allows to select the pokemon if it was not yet selected or unselect it otherwise.
+        The only subtlety here is in the click event of the icon. It changes the <code
+              class="language-typescript">selectedId</code> variable to the ID of the
+        pokemon to edit, or to <code class="language-typescript">null</code> if <code
+              class="language-typescript">selectedId</code> already contains it. This allows you to select the pokemon
+        if it was not already selected, or unselect it if it was.
     </p>
 
     <p>
-        The most important code is located in the upsert component:
+        The most important code is in the upsert component:
     </p>
 
     <pre>
@@ -1974,62 +1975,61 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
 </code></pre>
 
     <p>
-        So the idea here is that we won't assume that the entity you want to update is already in the store. In a real
-        life scenario, it is most likely that entities will be loaded prior being able to update them but let's imagine
-        it's not the case.
+        The idea here is that we shouldn't assume that the entity you want to update is already in the store. In a
+        real-world scenario, it is more likely that entities will be loaded before they can be updated, but let's
+        imagine that's not the case.
     </p>
 
     <p>
-        The <code class="language-typescript">id</code> input can recieve two different values:
+        The <code class="language-typescript">id</code> input can receive two different values:
     </p>
 
     <ul>
-        <li><strong>null</strong>: Means that we want to create a new pokemon.</li>
-        <li><strong>A number</strong>: Means that we want to update the pokemon with this id.</li>
+        <li><strong>null</strong>: Indicates that we want to create a new pokemon.</li>
+        <li><strong>A number</strong>: Indicates that we want to update the pokemon with that key.</li>
     </ul>
 
     <p>
-        So, depending on the value of this input, we will either set the <code class="language-typescript">query$</code>
-        and <code class="language-typescript">data$</code> observables on an observable emitting the <code
-              class="language-typescript">null</code> value (in case of creation) or on observables used to load and
-        select
-        the entity. Note that we use the operators <code class="language-typescript">filter</code> and <code
-              class="language-typescript">take</code> in order to only used the first non null emitted value. We do that
-        for a specific reason. Indeed, we'll set the value of the form based on the current data of the entity. However,
-        if we didn't stop after the first non null emitted value, we would have taken the risk to lost our modification
-        during the edition. Indeed, say you fetched the pokemon 1 and set the value of the form based on it. Now, while
-        you're typing the new name of the pokemon, the state of the entity changes (maybe in reaction to a web socket
-        message). As a new value is emitted, the form will reset with the new values and you'll lose all your
-        modifications. This is why we used <code class="language-typescript">take</code>; in
-        order to avoid losing the current modification.
+        Depending on the value of this input, we will either set the <code class="language-typescript">query$</code> and
+        <code class="language-typescript">data$</code> observables to observables that emit the value <code
+              class="language-typescript">null</code> (in the case of creation) or to observables used to load and
+        select the entity. Note that we use the <code class="language-typescript">filter</code> and <code
+              class="language-typescript">take</code> operators to only use the first non-null emitted value. We do this
+        for a specific reason. We want to set the value of the form based on the current data of the entity. However, if
+        we didn't stop after the first non-null emitted value, we would risk losing our changes during the edit process.
+        For example, say you fetch pokemon 1 and set the value of the form based on it. While you are typing the new
+        name of the pokemon, the state of the entity changes (perhaps in response to a web socket message). As a new
+        value is emitted, the form resets with the new values and you lose all your changes. This is why we use <code
+              class="language-typescript">take</code>: to avoid losing the current changes.
     </p>
 
     <p>
-        Then we have the <code class="language-typescript">busy$</code> observable. In order to disable the button, we
-        could check the "adding" state of the entity list or the "updating" state of the entity but there is an easier
-        solution. Indeed, whenever an entity is being added, deleted or updated, the "busy" state of the entity list is
-        set to <code class="language-typescript">true</code>. So in this case, we can simply used this state to know
-        whether an entity is being updated or added.
+        Next is the <code class="language-typescript">busy$</code> observable. To disable the button, we could check the
+        "adding" state of the entity list or the "updating" state of the entity, but there is an easier solution.
+        Whenever an entity is being added, deleted, or updated, the "busy" state of the entity list is set to <code
+              class="language-typescript">true</code>. So in this case, we can simply use this state to
+        know if an entity is being updated or added.
     </p>
 
     <p>
-        In the <code class="language-typescript">ngOnInit</code>, we simply create our form with default values.
+        In the <code class="language-typescript">ngOnInit</code> method, we simply create our form with default values.
     </p>
 
     <p>
-        In the <code class="language-typescript">upsert</code> function, we simply create the payload then send it to
-        the <code class="language-typescript">upsertPokemon</code> function. Note that we only reset the form value in
-        case of creation. Indeed, in case of update, we want to keep the data synchronized with the <code
-              class="language-typescript">id</code> property.
+        In the <code class="language-typescript">upsert</code> function, we create the payload and send it to the <code
+              class="language-typescript">upsertPokemon</code> function. Note that we only reset
+        the form value in the case of creation. In the case of update, we want to keep the data synchronized with the
+        <code class="language-typescript">id</code>
+        property.
     </p>
 
     <p>
-        The <code class="language-typescript">reset</code> function resets the form based on the object received in
+        The <code class="language-typescript">reset</code> function resets the form based on the object received as a
         parameter.
     </p>
 
     <p>
-        Now let's have a look at the template:
+        Now let's look at the template:
     </p>
 
     <pre>
@@ -2068,30 +2068,31 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
 </code></pre>
 
     <p>
-        We're using the <code class="language-typescript">changed</code> event of the container to execute a function
-        when the data emitted by <code class="language-typescript">data$</code> changes. In this case, we want to reset
-        the form with the emitted value. Remember, in case of <code class="language-typescript">id null</code>, we
-        emit the value <code class="language-typescript">null</code>, however, if the <code
-              class="language-typescript">id</code> is defined, we emit to first non-null value from the store.
+        We use the <code class="language-typescript">changed</code> event of the container to execute a function when
+        the data emitted by <code class="language-typescript">data$</code> changes. In this
+        case, we want to reset the form with the emitted value. Remember, in the case of id being <code
+              class="language-typescript">null</code>, we emit the
+        value <code class="language-typescript">null</code>, but if id is defined, we emit the first non-null value from
+        the store.
     </p>
 
     <p>
-        The last thing to note is the button: we disable it if the form is invalid or if the <code
-              class="language-typescript">busy$</code> observable emits <code class="language-typescript">true</code>.
-        Moreover, we change the label of the button depending on the <code class="language-typescript">id</code> field
-        of the form.
+        The last thing to note is the button: it is disabled if the form is invalid or if the <code
+              class="language-typescript">busy$</code> observable emits
+        <code class="language-typescript">true</code>. Additionally, the label of the button changes depending on the
+        <code class="language-typescript">id</code> field of the form.
     </p>
 
     <p>
-        Note that we could have done this in different ways, but it's important to use an observable for the busy state
-        of the form. Indeed, as we are using the <code class="language-typescript">OnPush</code> change detection
-        strategy, it's important to refresh the view when the state of the form changes. Without this, we would have
-        needed to <code class="language-typescript">markForCheck</code> the component in order to reflect the form
-        reset after the update was done.
+        It's important to note that we could have done this in a different way, but using an observable for the busy
+        state of the form is important. Since we are using the <code class="language-typescript">OnPush</code> change
+        detection strategy, it's important to refresh the view when the state of the form changes. Without this, we
+        would need to call <code class="language-typescript">markForCheck</code> on the component to reflect the form
+        reset after the update was completed.
     </p>
 
     <p>
-        The last piece of the puzzle is the <code class="language-typescript">upsertPokemon</code> function of the
+        The final piece of the puzzle is the <code class="language-typescript">upsertPokemon</code> function in the
         service:
     </p>
 
@@ -2108,25 +2109,24 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
 </code></pre>
 
     <p>
-        This function is actually a bit more complicated than it needs to be "because" of the JSON server. Indeed, in
-        real life scenario, you would probably have implemnted an upsert function creating or updating the entity.
-        However,
-        JSON server does not provide a route to do both. You either have to perform a POST to create the entity of a PUT
-        to update it.
+        This function is a bit more complicated than it needs to be because of the JSON server. In a real-world
+        scenario, you would probably have implemented an upsert function that creates or updates the entity. However,
+        the JSON server does not provide a route for both operations. You either have to use a POST request to create
+        the entity or a PUT request to update it.
     </p>
 
     <p>
-        However, it is not very complicated. Basically, if <code class="language-typescript">data.id</code> is <code
+        However, it's not very complicated. If <code class="language-typescript">data.id</code> is <code
               class="language-typescript">null</code>, we call the <code class="language-typescript">postEntity</code>
         function like we did in the previous example. Otherwise, we call <code
-              class="language-typescript">putEntityByKey</code> that behaves exactly like <code
+              class="language-typescript">putEntityByKey</code>, which behaves the same as <code
               class="language-typescript">postEntity</code> but requires the key of the entity as the third parameter.
-        As both functions return the same type of object, you can store it in a single variable then pipe it in order to
-        update the store once the call is done.
+        Because both functions return the same type of object, you can store it in a single variable and pipe it to
+        update the store once the call is completed.
     </p>
 
     <p>
-        And that's it, you have a component that can add or update an entity pretty easily.
+        And that's it! You now have a component that can easily add or update an entity.
     </p>
 
     <p class="message information">
@@ -2138,7 +2138,7 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
     <h1 id="delete">Delete</h1>
 
     <p>
-        The last operation left to support is the deletion of values in the store. Here are the relevant parts of the
+        The final operation we need to support is deleting values from the store. Here are the relevant parts of the
         example:
     </p>
 
@@ -2174,7 +2174,7 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
 
 }
 </code></pre>
-
+<!-- HERE -->
     <p>
         Deleting an item from the store using a REST call can be done using the <code
               class="language-typescript">deleteEntityByKey</code> function. It simply expects the route to the REST
