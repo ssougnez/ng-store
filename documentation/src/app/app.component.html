@@ -2174,21 +2174,26 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
 
 }
 </code></pre>
-<!-- HERE -->
+    <!-- HERE -->
     <p>
-        Deleting an item from the store using a REST call can be done using the <code
-              class="language-typescript">deleteEntityByKey</code> function. It simply expects the route to the REST
-        API, the section of the store to find the entity and its key. Note that this function only calls the route and
-        set the <code class="language-typescript">deleting</code> property of the entity to <code
-              class="language-typescript">true</code> but does not actually remove the entity from the store, which is
-        why we pipe the observable to a call to the <code class="language-typescript">removeValuesByKeys</code> function
-        that actually removes the entity from the store. Note that you can pass more than one key if you wish to delete
-        multiple entities.
+        To delete an item from the store using a REST call, you can use the <code
+              class="language-typescript">deleteEntityByKey</code> function. This function
+        takes in three parameters: the route to the REST API, the section of the store where the entity is located, and
+        the key of the entity. It's important to note that this function only sets the <code
+              class="language-typescript">deleting</code> property of the entity
+        to <code class="language-typescript">true</code>, but does not actually remove the entity from the store. To
+        actually remove the entity from the store, you can pipe the observable to a call to the <code
+              class="language-typescript">removeValuesByKeys</code> function. You can also pass multiple keys to the
+        <code class="language-typescript">removeValuesByKeys</code> function if you want to delete multiple entities at
+        once.
     </p>
 
     <p>
-        There is also another function called <code class="language-typescript">removeValuesBy</code> that can be used
-        to remove entities based on a predicate.
+        In addition to the <code class="language-typescript">removeValuesByKeys</code> function, there is another
+        function called <code class="language-typescript">removeValuesBy</code> that allows you
+        to remove entities based on a predicate. You can pass a predicate function to the <code
+              class="language-typescript">removeValuesBy</code> function and it will remove any entities that match the
+        criteria specified by the predicate.
     </p>
 
     <p>
@@ -2219,11 +2224,13 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
 </code></pre>
 
     <p>
-        The code is pretty self explanatory but there is one thing worth noticing. So far, we only selected values from
-        the store because we didn't need to access their state (adding, updating or deleting). Here, we want to display
-        a deleting indicator while the entity is being deleted. To do so, we'll select the pokemon as entities instead
-        of as values. This also means that we need to use <code class="language-typescript">trackByEntity</code> instead
-        of <code class="language-typescript">trackByValue</code>.
+        The code should be fairly self-explanatory, but there is one important detail to note. In previous examples, we
+        have only selected values from the store because we didn't need to access their state (adding, updating, or
+        deleting). However, in this case we want to display a deleting indicator while the entity is being deleted. To
+        do this, we'll need to select the entities themselves instead of just their values. This means that we'll need
+        to use the <code class="language-typescript">trackByEntity</code> function instead of <code
+              class="language-typescript">trackByValue</code>. This allows us to access the state of the entities as
+        well as their values.
     </p>
 
     <p>
@@ -2249,12 +2256,14 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
 </code></pre>
 
     <p>
-        Note that here, we use the <code class="language-typescript">value</code> property of the entities to access the
-        actual <code class="language-typescript">Pokemon</code> object. However, we use the property <code
-              class="language-typescript">deleting</code> to define whether the displayed icon is the little trash or
-        the spinner. This works because the <code class="language-typescript">deleteEntityByKey</code> function updates
-        the <code class="language-typescript">deleting</code> property of the entity during deletion, so you don't have
-        to handle this yourself.
+        It's worth noting that in this example, we use the <code class="language-typescript">value</code> property of
+        the entities to access the actual <code class="language-typescript">Pokemon</code>
+        objects. However, we use the <code class="language-typescript">deleting</code> property to determine whether to
+        display the trash icon or the spinner. This is possible because the <code
+              class="language-typescript">deleteEntityByKey</code> function updates the deleting property of the entity
+        during the deletion process, so you don't have to handle this yourself. You can simply use the <code
+              class="language-typescript">deleting</code> property to determine whether to display the loading indicator
+        or the completed action.
     </p>
 
     <p class="message information">
@@ -2265,23 +2274,26 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
 
     <h1 id="ngs-container">ngs-container</h1>
 
-    <p>
-        The <code class="language-xml">ngs-container</code> component can be customized in various ways in order to look
-        exactly like you want. Let's start by talking about the loading indicator, which can be configured in four
-        different ways using the <code class="language-typescript">loaderType</code> property:
-    </p>
+    <p>The <code class="language-xml">ngs-container</code> component can be customized to meet your desired design. One
+        aspect you can modify is the
+        loading indicator, which can be configured in four different ways using the loaderType property:</p>
 
     <ul>
-        <li><strong>text</strong>: Displays a sentence during the loading.</li>
-        <li><strong>template</strong>: Displays a custom template during the loading.</li>
-        <li><strong>component</strong>: Displays a custom component during the loading.</li>
-        <li><strong>none</strong>: Does not display anything during the loading.</li>
+        <li><strong>text</strong>: Display a sentence during the loading process.</li>
+        <li><strong>template</strong>: Display a custom template during the loading process.</li>
+        <li><strong>component</strong>: Display a custom component during the loading process.</li>
+        <li><strong>none</strong>: Do not display anything during the loading process.</li>
     </ul>
 
     <p>
-        If you opt for the "text" approach, you can customize the displayed text in two ways. Either by simply using the
-        <code class="language-xml">loaderText</code> attribute:
+        If you choose to use the text option for the loading indicator, you have the ability to customize the displayed
+        text in two ways:
     </p>
+
+    <ul>
+        <li>Set the loaderText attribute to the desired text.</li>
+        <li>Use the loaderText property in the loaderType object to specify the text.</li>
+    </ul>
 
     <pre>
 <code class="language-xml">&lt;ngs-container [query$]="query$"
@@ -2295,7 +2307,7 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
 </code></pre>
 
     <p>
-        However, you can also use the injection token in order to define the sentence to display globally:
+        However, you can also define the sentence to display globally. Here is how to do so when using modules:
     </p>
 
     <pre>
@@ -2309,13 +2321,25 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
 </code></pre>
 
     <p>
-        As this property expects a function, you can use <code class="language-typescript">inject</code> in order to
-        inject a translation service that will return the sentence in the desired language. Note that the value of the
-        attribute take precedence over the one of the injection token.
+        And here is how to do so in a standalone application:
+    </p>
+
+    <pre>
+<code class="language-typescript">provideStore({{ '{' }}
+    initialValue: initial,
+    defaultLoaderText: () => 'This might take a while...'
+})
+</code></pre>
+
+    <p>
+        The <code class="language-typescript">loaderText</code> property expects a function, so you can use the <code
+              class="language-typescript">inject</code> function to inject a translation service that will return the
+        sentence in the desired language. Keep in mind that the value of the attribute will take precedence over the
+        value of the injection token.
     </p>
 
     <p>
-        You can also choose to display a template instead of a loading text:
+        You can also choose to display a template instead of a text:
     </p>
 
     <pre>
@@ -2334,9 +2358,9 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
 </code></pre>
 
     <p>
-        Finally, you can also create a custom component that will be instantiated each time the loading indicator has to
-        be displayed. The only requirement is that this component must implement <code
-              class="language-typescript">IBaseLoaderComponent</code>:
+        You can create a custom component that will be displayed each time the loading indicator is activated. To do
+        this, your custom component must implement the <code class="language-typescript">IBaseLoaderComponent</code>
+        interface. This allows you to create a completely unique loading experience for your users.
     </p>
 
     <pre>
@@ -2351,11 +2375,12 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
     <pre><code class="language-xml">&lt;div [style.fontSize]="size">Please wait a minute during the loading...&lt;/div></code></pre>
 
     <p>
-        This interface forces you to implement a <code class="language-typescript">size</code> property defining the
-        size of the loader. Indeed, most of the time, this approach (which is the default one) is used to display an
-        animated loading indicator and being able to define its size can come handy (note that you can also specify the
-        size directly using the attribute of the container, which superseed the global configuration). Finally, you have
-        to adapt the store configuration to specify the component to use:
+        The <code class="language-typescript">IBaseLoaderComponent</code> interface requires you to implement a <code
+              class="language-typescript">size</code> property that defines the size of the loader. This is useful
+        because you may want to adjust the size of the loading indicator depending on the design of your application.
+        You can also specify the size directly using the attribute of the container, which will take precedence over the
+        global configuration. To use a custom loading component, you will need to update the store configuration to
+        specify the component to use. Here's an example of how to do this using modules:
     </p>
 
     <pre>
@@ -2368,10 +2393,20 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
 }
 </code></pre>
 
+    <p>And how to do it using a standalone application:</p>
+
+    <pre>
+<code class="language-typescript">provideStore({{ '{' }}
+    initialValue: initial,
+    loaderComponent: LoaderComponent
+})
+</code></pre>
+
     <p>
-        You can define the appearance of the errors in the same way you do for loading indicators. By default, the JSON
+        You can customize the appearance of errors in the same way you do for loading indicators. By default, the JSON
         representation of the error is displayed in a <code class="language-xml">pre</code> tag. However, you can choose
-        to display it in a template:
+        to display it in a template instead by using the <code class="language-xml">errorTemplate</code> property of the
+        <code class="language-xml">ngs-container</code> component. Here's an example of how to do this:
     </p>
 
     <pre>
@@ -2405,8 +2440,9 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
     <pre><code class="language-xml">&lt;div style="color:red">{{ '{' + '{' }} error.message }}&lt;/div></code></pre>
 
     <p>
-        Basically, you just have to implement an <code class="language-typescript">error</code> input that will receive
-        the error. Finally, you just have to update the store configuration to take this component into account:
+        To create a custom error component, you need to implement an <code class="language-typescript">error</code>
+        input that will receive the error. Then, update the store configuration to include the custom error component.
+        Here is how to do so when using modules:
     </p>
 
     <pre>
@@ -2419,16 +2455,25 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
 },
 </code></pre>
 
+    <p>And here is how to do so when using a standalone application:</p>
+
+    <pre>
+<code class="language-typescript">provideStore({{ '{' }}
+    initialValue: initial,
+    errorComponent: ErrorComponent
+})
+</code></pre>
+
     <p>
-        As a reminder, the container component also support the <code class="language-typescript">changed</code> event
-        that forwards values emitted by the <code class="language-typescript">data$</code> observable.
+        The container component supports the <code class="language-typescript">changed</code> event that forwards values
+        emitted by the <code class="language-typescript">data$</code> observable.
     </p>
 
     <h1 id="store-component">StoreComponent</h1>
 
     <p>
-        When using the store, there is a kind of component that you'll be implementing often. The ones that only display
-        one or several values and do nothing else. For example, take the following example:
+        When using the store, you'll often encounter components that only display one or several values and don't do
+        anything else. For example:
     </p>
 
     <pre>
@@ -2448,10 +2493,10 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
 </code></pre>
 
     <p>
-        There are some parts here that are common to all components of this type: the injection of the store, the
-        creation of the <code class="language-typescript">query$</code> observable and the creation of the <code
-              class="language-typescript">data$</code> observable. In order to avoid having to repeat this on all
-        components of that type, the store comes with a base class helping you reduce a bit the boilerplate:
+        There are certain elements that are common to all components of this type: injecting the store, creating the
+        <code class="language-typescript">query$</code> observable, and creating the <code
+              class="language-typescript">data$</code> observable. To avoid repeating this in all components of this
+        type, the store provides a base class that can help reduce some of the boilerplate:
     </p>
 
     <pre>
@@ -2472,14 +2517,14 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
 </code></pre>
 
     <p>
-        Note that in this case, you have to use the <code class="language-typescript">data$</code> observable and not
-        <code class="language-typescript">pokemon$</code>. The gain here is not obvious but it's more clear when you
-        have an input that defines the observables. In that case, you can directly assign them like we did in the <code
-              class="language-typescript">ngOnInit</code>.
+        Note that in this case, you have to use the <code class="language-typescript">data$</code> observable instead of
+        <code class="language-typescript">pokemon$</code>. The benefit might not be
+        immediately apparent, but it becomes clearer when you have an input that defines the observables. In that case,
+        you can directly assign them as we did in the <code class="language-typescript">ngOnInit</code> method.
     </p>
 
     <p>
-        This component will not reduce the size of your bundle by half but it comes handy from time to time.
+        This component might not reduce the size of your bundle by half, but it can be useful in certain situations.
     </p>
 
     <h1 id="roadmap">Roadmap</h1>
@@ -2490,8 +2535,8 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
     </p>
 
     <ul>
-        <li>Unit testing</li>
-        <li>Consider the possibility to switch to mutative instead of immer</li>
+        <li>Unit testing.</li>
+        <li>Consider the possibility of switching to mutative rather than using Immer.</li>
     </ul>
 
 </main>

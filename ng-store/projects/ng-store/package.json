@@ -1,10 +1,10 @@
 {
   "name": "@ssougnez/ng-store",
-  "version": "1.0.3",
-  "keywords": [ "Angular", "store", "data management", "reactive", "ngrx", "state" ],
+  "version": "1.1.0",
+  "keywords": [ "Angular", "store", "data management", "reactive", "ngrx", "state", "akita", "elf" ],
   "peerDependencies": {
-    "@angular/common": ">= 14.0.0",
-    "@angular/core": ">= 14.0.0",
+    "@angular/common": ">= 15.0.0",
+    "@angular/core": ">= 15.0.0",
     "immer": ">=8.0.0"
   },
   "dependencies": {
