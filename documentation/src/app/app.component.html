@@ -36,131 +36,153 @@
 
     <h1 id="context">Context</h1>
 
-    <p>Managing data in an Angular application can be quite tricky and impact the way you develop your application.
-        "ng-store" is a solution to manage data using a store similar to a relational database.</p>
+    <p>
+        Effective data management is crucial for the success of an Angular application as it can significantly influence
+        the development process. "ng-store" is a tool that helps to manage data in a store similar to a relational
+        database, providing a simple and organized solution for data management within an Angular application.
+    </p>
 
     <h1 id="introduction">Introduction</h1>
 
-    <p>When learning Angular, you'll be confronted to a lot of concepts and challenges that you'll have to take.
-        There are so many of those that beginners tend to neglect one of the most important: data management.</p>
-
-    <p>At first, it's tempting to rush into components development to make huge and complex components to power your
-        application. After all, at first, it seems easier to have everything in a huge component. However, after a
-        while, it appears that it is not a good solution and that it brings more problem that it solves.</p>
-
-    <p>At some point, in the Angular learning journey, one will be confronted to the challenge of managing data in the
-        best way possible. At first, it's most likely that one will store data inside a component. Basically, after
-        having read some tutorials, one will inject the <code class="language-typescript">HttpClient</code> service into
-        the component and call the <code class="language-typescript">get</code> method to fetch data before displaying
-        them on the screen.</p>
-
-    <p>It obviously works pretty well, however, there are some attention points to this:</p>
-
-    <ul>
-        <li>
-            In a perfect world, a component should do one and only one thing. Therefore, fetching data using a HTTP call
-            and displaying them could be considered as two things => bad practice.
-        </li>
-        <li>
-            Data loaded in the component are only available in this component.
-        </li>
-        <li>
-            You might need multiple class variables to store these data depending on the complexity of the component.
-        </li>
-        <li>
-            If multiple components need the same data, they will be loaded multiple times.
-        </li>
-    </ul>
-
-    <p>The next logical step is to start using services to store data. There are avantages to this approach:</p>
-
-    <ul>
-        <li>
-            Data are centralized: When data are loaded, they are available to multiple components.
-        </li>
-        <li>
-            The heavy lifting is done once by the service. Components needing the data just have to inject the
-            service and use the data.
-        </li>
-    </ul>
-
     <p>
-        However, it's still, in my opinion, not the perfect solution. Indeed, with services maintaining their own data
-        arise some pain points:
+        As you embark on your journey to learn Angular, you will encounter numerous concepts and challenges that you
+        must overcome. It is common for beginners to overlook the importance of effective data management amidst the
+        abundance of information they are trying to absorb. However, data management is a crucial aspect of Angular
+        development that should not be neglected.
     </p>
 
+    <p>
+        When starting out with Angular, it may be tempting to create large, complex components to power your
+        application. Initially, it may seem simpler to have all the necessary functionality in a single component.
+        However, over time, it becomes clear that this approach can cause more problems than it solves, leading to a
+        less maintainable and scalable application.
+    </p>
+
+    <p>
+        As you progress in your Angular learning journey, you will eventually face the challenge of managing data in the
+        most effective manner. At first, it is common to store data within a component, using the <code
+              class="language-typescript">HttpClient</code> service to fetch data and display it on the screen. However,
+        as you gain more experience, you will discover more advanced techniques for managing data in a more organized
+        and scalable way.
+    </p>
+
+    <p>While this method of data management can be effective, there are some drawbacks to consider.</p>
+
     <ul>
         <li>
-            What if the service A needs data from the services B and vice versa. This will create a cyclic dependency
-            that will be difficult to solve properly.
+            In a well-designed application, components should have a single, specific purpose. Fetching data using a
+            HTTP call and displaying it involves two separate functions, which would not be considered best practice in
+            component design.
         </li>
         <li>
-            It's difficult to ensure that services fetch and maintain their data in the same way. This can be leveraged
-            using a base class but it adds some complexity.
+            Data that is loaded within a component is only accessible within that specific component.
         </li>
         <li>
-            If you're using the "OnPush" change detection strategy (as you should), simply updating data in a service
-            won't refresh the views that depend on its data. Indeed, you'll need to implement a system propagating the
-            value change down to the components. It's not very complex but it adds unecessary boilerplate.
+            The number of class variables required to store the data may vary depending on the complexity of the
+            component.
         </li>
         <li>
-            You still have to think and implement a way of fetching data from your back end in a consistent way.
+            If multiple components require the same data, it will need to be retrieved multiple times, potentially
+            leading to reduced performance.
+        </li>
+    </ul>
+
+    <p>One solution to these issues is to use services to store data. This approach has several advantages.</p>
+
+    <ul>
+        <li>
+            Centralized data: When data is loaded through a service, it can be accessed by multiple components.
+        </li>
+        <li>
+            Improved efficiency: The service handles the process of retrieving the data, allowing components to access
+            it simply by injecting the service and using the stored data.
         </li>
     </ul>
 
     <p>
-        I faced all these issues and considerations in my day to day work for a while, which is why I decided to have a
-        look at store/state management systems out there.
+        While using services for data management can be a useful technique, it is not without its challenges. Some
+        potential drawbacks include:
     </p>
 
-    <p>To be honest, I only checked one out: <a href="https://ngrx.io/"
-           target="_blank">ngrx</a>. Mostly because it's the most popular one.
+    <ul>
+        <li>
+            Cyclic dependencies can occur when service A depends on data from service B, and vice versa. This can create
+            a difficult-to-resolve circular dependency.
+        </li>
+        <li>
+            Maintaining consistent data management practices across services can be challenging. While a base class can
+            help to enforce a standardized approach, it can also add complexity to the codebase.
+        </li>
+        <li>
+            If you are using the "OnPush" change detection strategy (as is recommended for optimal performance), simply
+            updating data in a service will not trigger a refresh of the views that depend on it. To propagate the data
+            changes to the components, you will need to implement a system that explicitly communicates the value
+            changes. While this is not overly complex, it does add unnecessary boilerplate code.
+        </li>
+        <li>
+            You will still need to consider and implement a consistent approach for fetching data from the back end.
+        </li>
+    </ul>
+
+    <p>
+        I encountered these issues and considerations regularly in my work, which motivated me to explore the various
+        store/state management systems available.
     </p>
 
     <p>
-        Before reading the following lines, please consider that I didn't use it for a long time and I probably only
-        scratched the surface so the following lines might not be entirely correct or can be outdated.
+        To be honest, I only evaluated one store/state management system: <a href="https://ngrx.io/"
+           target="_blank">ngrx</a>. This was primarily because it is the most widely used and well-known option.
     </p>
 
     <p>
-        My general feeling about this library is that it is waaay too complex to use. You have to create actions,
-        effects, reducers, selectors, etc... and at the end, everything ties up magically and it becomes pretty
-        cumbersome to have a clear view of what's happening in your application or to debug it.
+        Please note that my experience with ngrx is limited, and the following information may not be comprehensive or
+        entirely accurate as I have not used it extensively. It is also possible that some of the details may have
+        changed since my last usage.
     </p>
 
     <p>
-        Another issue I had with it was the way immutability is handled. Basically, you have to do the heavy lifting
-        using the spread operator in order to create new objects based on existing ones. I found it pretty cumbersome
-        and not very intuitive (spoiler alert: "ng-store" handles it in a way that is totally transparent to you).
+        Overall, my impression of this library is that it is excessively complex to use. You are required to create
+        actions, effects, reducers, selectors, etc., and while everything ultimately fits together, it can be difficult
+        to maintain a clear understanding of what is happening in your application or to debug it effectively. The sheer
+        number of required components can make the codebase cumbersome to navigate.
     </p>
 
     <p>
-        Once again, I'm sure it's a perfectly good library but long story short, it didn't suit me.
+        I also struggled with the way immutability is managed in ngrx. To create new objects based on existing ones, you
+        must manually use the spread operator, which I found to be cumbersome and not very intuitive. "ng-store" handles
+        this differently, making the process transparent to the user.
     </p>
 
     <p>
-        However, I really liked the idea of having one common location to store all the data of the application.
-        Besides, the reactivity of the store also charmed me a lot, which is why I decided to implement my own store
-        management library.
+        While ngrx may be a suitable solution for some, it did not meet my needs and expectations. It is worth noting
+        that this is a personal opinion and that the library may be well-suited for others.
     </p>
 
     <p>
-        At the time of writing (2023), I've been working on and using this library for two years and now that it is
-        stable, I feel that it can be useful to other developers than me.
+        Despite my issues with ngrx, I appreciated the concept of having a central location to store all application
+        data and the reactivity of the store. As a result, I decided to create my own store management library to
+        address these needs.
     </p>
 
     <p>
-        In this documentation, we'll see the basic principle behind ng-store, how to configure and use it. After
-        reading, you'll know everything there is about it and if you liked what you read, maybe you'll want to use it in
-        your app 😀
+        As of 2023, I have been using and developing this library for two years, and it has now reached a stable state.
+        I believe it may be useful for other developers, and that is why I am sharing it.
+    </p>
+
+    <p>
+        This documentation will cover the fundamental principles of ng-store, as well as how to set it up and use it. By
+        the end of this guide, you should have a thorough understanding of the library and, if you find it appealing, be
+        equipped to use it in your own application. 😀
     </p>
 
     <h1 id="playground">Playground</h1>
 
-    <p>You can find the code of the examples we'll talk about later in this article in the <a
+    <p>
+        You can access the code for the examples discussed in this article on the <a
            href="https://github.com/ssougnez/ng-store/tree/main/ng-store-playground/src"
-           target="_blank">GitHub playground</a>. The only thing you need to do is update the line 6 of the "main.ts"
-        file to change the example you want to build.</p>
+           target="_blank">GitHub playground</a>. To switch between examples, simply update the line 6 of the "main.ts"
+        file. All the necessary code is provided for you to build and run the examples.
+    </p>
 
     <h1 id="installation">Installation</h1>
 
@@ -171,14 +193,15 @@
     <h1 id="principle">Principle</h1>
 
     <p>
-        You can use "ng-store" the way you want, however, you'll find in this section some advices to use it in an
-        optimal way.
+        While you are free to use "ng-store" in any way that suits your needs, this section provides some
+        recommendations for optimal usage.
     </p>
 
     <p>
-        Basically, the main principle consists in using "flat objects" as musch as possible. What I call "flat objects"
-        are objects without any complex properties other than ones containing abstract data. For example, this is not a
-        "flat object":</p>
+        The main principle of "ng-store" is to use "flat objects" as much as possible. By "flat objects," I refer to
+        objects that do not have any complex properties aside from those containing abstract data. For example, the
+        following is not a "flat object":
+    </p>
 
     <pre>
 <code class="language-typescript">{{ '{' }}
@@ -193,10 +216,10 @@
 }</code></pre>
 
     <p>
-        The issue with this kind of objet is that it is an open door to data redundancy. Indeed, say that you fetch
-        these data from a back end using REST API. It is very likely that the different users will have the same
-        friends, meaning that a user data might be located in the "friends" array of multiple objects, causing the data
-        to be bigger and duplicated. A better version of it would be:
+        Using this type of object can lead to data redundancy. For instance, if these data are retrieved from a back end
+        using a REST API, it is likely that multiple users will have the same friends. This means that a user's data
+        might be stored in the "friends" array of multiple objects, resulting in larger, duplicated data. A better
+        approach would be:
     </p>
 
     <pre>
@@ -208,31 +231,32 @@
 }</code></pre>
 
     <p>
-        In this approach, objects are treated as <strong>entities</strong> identified by a specific property that do not
-        contain complex properties other than abstract data. "Abstract data" are data that does not represent entities
-        in themselves, for example, some configuration for a specific entity.
+        This approach treats objects as <strong>entities</strong>, identified by a specific property and containing only
+        abstract data as complex properties. "Abstract data" refers to information that does not represent entities in
+        and of themselves, such as configuration data for a specific entity.
     </p>
 
     <p>
-        Basically, you have to think about entities as rows in a relational database. In these, you have regular columns
-        storing simple data and when you need more complex data, you store them in another table referenced by a foreign
-        key in your primary one. In some circunstance, you'll also create a text column storing abstract data (in JSON).
+        Think of entities as rows in a relational database. These rows contain simple data in regular columns, and when
+        more complex data is needed, it is stored in another table and referenced by a foreign key in the primary table.
+        In some cases, it may also be useful to store abstract data as a JSON string in a text column.
     </p>
 
     <p>
-        Following this principle will help you a lot using "ng-store", but also for working on your back end. Indeed,
-        when you have no real guidelines about the form of the object to return via a web service, it can be difficult
-        to know what data to fetch from the database because you're not sure what data will be needed by the REST API
-        call. With this approach, most of the time, you'll fetch data from your database in the most basic way.
+        Adhering to this principle will greatly aid in your use of "ng-store" and also in designing your back end. When
+        there are no clear guidelines for the structure of objects returned by a web service, it can be challenging to
+        determine which data to fetch from the database, as it is not clear which data will be needed by the REST API
+        call. With this approach, you will typically fetch data from the database in the most straightforward manner.
     </p>
 
     <h1 id="models">Models</h1>
 
     <p>
-        The core concept of the store is "entities". As explained above, an entity is a basic object with only
-        simple properties. It must also contain an "id" property of the type you want. To ensure this last requirement,
-        all your entities need to extend the <code class="language-typescript">BaseEntity&lt;T></code> base class
-        where "T" is the type of the "id" property. For example, here is an example of a "Pokemon" entity.
+        The central concept of the store is "entities." As mentioned earlier, an entity is a basic object with only
+        simple properties, and it must also have an "id" property of a specific type. To ensure that this requirement is
+        met, all your entities must extend the <code class="language-typescript">BaseEntity&lt;T></code> base class,
+        where
+        "T" is the type of the "id" property. For example, the following is a "Pokemon" entity:
     </p>
 
     <pre>
@@ -244,33 +268,33 @@ export type Pokemon = BaseEntity&lt;number> & {{ '{' }}
 }</code></pre>
 
     <p>
-        It's important to highlight the fact that these entities are not stored as such in the store. In the example
-        above, a value of type "Pokemon" will be stored as an <code
-              class="language-typescript">Entity&lt;Pokemon></code> object. This type
-        allows ng-store to store and find values in an efficient way. For now, the most important thing to remember is
-        that an object of type <code class="language-typescript">Entity&lt;T></code> contains a <code
+        It is important to note that these entities are not stored as-is in the store. In the example above, a value of
+        type "Pokemon" will be stored as an <code class="language-typescript">Entity&lt;Pokemon></code> object. This
+        type
+        allows ng-store to efficiently store and retrieve values. For now, the most important thing to remember is that
+        an object of type <code class="language-typescript">Entity&lt;T></code> has a <code
               class="language-typescript">value</code> property that holds the actual <code
               class="language-typescript">Pokemon</code> object. The type <code
-              class="language-typescript">Entity&lt;T></code> also contains other properties that we'll review later in
+              class="language-typescript">Entity&lt;T></code> also has other properties that will be discussed later in
         this document.
     </p>
 
     <p>
-        For the rest of this article, we'll use the following terms:
+        For the remainder of this article, the following terms will be used:
     </p>
 
     <ul>
-        <li><strong>value</strong>: A value is the object you want to store, in this case, a "Pokemon" object.</li>
-        <li><strong>entity</strong>: An entity is a value wrapped in a <code
+        <li><strong>Value:</strong> A value is the object you want to store, such as a "Pokemon" object.</li>
+        <li><strong>Entity:</strong> An entity is a value wrapped in a <code
                   class="language-typescript">Entity&lt;T></code> object.</li>
     </ul>
 
     <h1 id="state">State</h1>
 
     <p>
-        Now that we have an entity, we can create our state. A state is composed by a type defined its shape and its
-        initial value. Let's start by the shape of the state. In this example, it will simply contain a section called
-        "pokemons". A section can be seen as a table in a database. It stores data of the same type.
+        Now that we have an entity, we can create our state. A state consists of a type that defines its shape and an
+        initial value. First, let's define the shape of the state. In this example, it will contain a section called
+        "pokemons." A section can be thought of as a table in a database, storing data of the same type.
     </p>
 
     <p>
@@ -285,8 +309,8 @@ export type AppState = {{ '{' }}
 }</code></pre>
 
     <p>
-        Along with the shape of the state, we need to defined its initial value. In the same file, add the following
-        lines:
+        In addition to defining the shape of the state, we also need to define its initial value. In the same file, add
+        the following lines:
     </p>
 
     <pre>
@@ -297,19 +321,14 @@ export type AppState = {{ '{' }}
     }</code></pre>
 
     <p>
-        "createEntities" is a function that creates an empty section in your store.
+        The <code class="language-typescript">createEntities</code> function creates an empty section in your store.
     </p>
 
     <h1 id="configuration">Configuration</h1>
 
     <p>
-        The last step required to use the start is simply to inject it in your module and configure it to use the
-        default value of your store.
-    </p>
-
-    <p class="message information">
-        As ng-store is not yet standalone compatible, you have to import "NgStoreModule" in the components using it.
-        However, the standalone support is one of the next feature planned.
+        The final step is to configure your application to use the store with its initial value. Here is how to do this
+        using the modules approach:
     </p>
 
     <pre>
@@ -331,20 +350,31 @@ export type AppState = {{ '{' }}
 </code></pre>
 
     <p>
-        The configuration object accepts other properties but we'll cover them later in this documentation.
+        Alternatively, if you are using a standalone application:
+    </p>
+
+    <pre>
+<code class="language-typescript">provideStore({{ '{' }}
+    initialValue: initial,
+    httpClientType: null
+})
+</code></pre>
+
+    <p>
+        The configuration object also accepts other properties, which will be covered later in this documentation.
     </p>
 
     <p>
-        ng-store supports loading data asynchronously using HTTP requests. To use this feature, you can either not
-        define the <code class="language-typescript">httpClientType</code> to use the default HTTP client of Angular or
-        define it on a custom class (more on that later).
+        ng-store supports loading data asynchronously using HTTP requests. To use this feature, you can either omit the
+        <code class="language-typescript">httpClientType</code> to use the default HTTP client provided by Angular or
+        specify a custom class for it (more on this later).
     </p>
 
     <h1 id="find">Find functions</h1>
 
     <p>
-        Find functions are used to find entities or values in the store. Let's start by updating the initial state of
-        the store in order to insert some data.
+        Find functions are used to locate entities or values in the store. Let's start by updating the initial state of
+        the store to insert some data.
     </p>
 
     <pre>
@@ -414,7 +444,7 @@ export type AppState = {{ '{' }}
 }</code></pre>
 
     <p>
-        Here's the ncessary code used to retrieve all the pokemons from the store:
+        This is the code necessary to retrieve all the pokemons from the store:
     </p>
 
     <pre>
@@ -428,10 +458,10 @@ export type AppState = {{ '{' }}
 }</code></pre>
 
     <p>
-        We're using the <code class="language-typescript">getValues</code> function to returns all the values stored in
-        the "pokemons" section of the store. The <code class="language-typescript">trackByValue</code> variable is a
-        function proposed by ng-store to tell <code class="language-typescript">ngFor</code> to use the "id" property of
-        array values.
+        We use the <code class="language-typescript">getValues</code> function to return all the values stored in the
+        "pokemons" section of the store. The <code class="language-typescript">trackByValue</code> variable is a
+        function provided by ng-store that tells <code class="language-typescript">ngFor</code> to use the "id" property
+        of array values.
     </p>
 
     <pre>
@@ -446,7 +476,7 @@ export type AppState = {{ '{' }}
     </div>
 
     <p>
-        Now, to understand the difference between an entity and its value, let's use this variation of the code:
+        To understand the difference between an entity and its value, let's use this variation of the code:
     </p>
 
     <pre>
@@ -475,19 +505,19 @@ export type AppState = {{ '{' }}
     <p>
         As you can see, an entity is an object with a <code class="language-typescript">value</code> property that
         contains the actual object you want to use. It also contains other properties used by "ng-store" to maintain the
-        store in a correct state. Besides, we'll see later in this document that you can use some of these properties to
-        update the UI of your component depending on the state of the entities in the store.
+        store in a consistent state. We will see later in this document that you can use some of these properties to
+        update the UI of your component based on the state of the entities in the store.
     </p>
 
     <p class="message information">
-        In this case, we used <code class="language-typescript">trackByEntity</code> as we're dealing with entities.
+        In this case, we use <code class="language-typescript">trackByEntity</code> as we are dealing with entities.
     </p>
 
     <p>
-        It is also possible to find a value or an entity in the store based on its "id" using the <code
+        It is also possible to find a value or an entity in the store based on its "id" using <code
               class="language-typescript">findValueByKey</code> or <code
-              class="language-typescript">findEntityByKey</code>. For example, here is how you would find the pokemon
-        with the "id" 1.
+              class="language-typescript">findEntityByKey</code>. For example, here is how you would find the Pokemon
+        with the "id" of 1
     </p>
 
     <pre>
@@ -495,12 +525,12 @@ export type AppState = {{ '{' }}
 public firstEntity: Entity&lt;Pokemon> | null = this._store.findEntityByKey(s => s.pokemons, 1);</code></pre>
 
     <p>
-        Note that these functions return <code class="language-typescript">null</code> if the entity cannot be found.
+        Note that these functions return <code class="language-typescript">null</code> if the entity is not found.
     </p>
 
     <p>
-        It is also possible to find values by any other criteria using the functions <code
-              class="language-typescript">findValuesBy</code> or <code
+        It is also possible to find values or entities in the store based on any other criteria using the functions
+        <code class="language-typescript">findValuesBy</code> or <code
               class="language-typescript">findEntitiesBy</code>. In the following example, we'll find all "normal"
         pokemons.
     </p>
@@ -510,13 +540,16 @@ public firstEntity: Entity&lt;Pokemon> | null = this._store.findEntityByKey(s =>
 public normalEntities: Entity&lt;Pokemon>[] = this._store.findEntitiesBy(s => s.pokemons, e => e.value.type === 'normal');</code></pre>
 
     <p class="message warning">
-        Even though the code above works, it's recommanded and more performant to use <a href="#indexes">indexes</a> as
-        much as possible to find values based on another property than the "id".
+        Using <a href="#indexes">indexes</a> can greatly improve the performance of finding values in the store,
+        especially when dealing with
+        large amounts of data. It is highly recommended to use indexes whenever possible, especially when finding values
+        based on properties other than the "id".
     </p>
 
     <p>
-        You can also use the functions <code class="language-typescript">findEntityBy</code> and <code
-              class="language-typescript">findValueBy</code> to find the first entity or value matching the condition.
+        The functions <code class="language-typescript">findEntityBy</code> and <code
+              class="language-typescript">findValueBy</code> can be used to locate the first entity or value that meets
+        the specified condition.
     </p>
 
     <p class="message information">
@@ -528,8 +561,8 @@ public normalEntities: Entity&lt;Pokemon>[] = this._store.findEntitiesBy(s => s.
     <h1 id="select">Select functions</h1>
 
     <p>
-        In the previous chapter, we saw how to retrieve values from the store. Even though it works, there is something
-        you need be aware of: The store is <strong>immutable</strong>. You can confirm this by trying to do something
+        In the previous chapter, we learned how to retrieve values from the store. It's important to note that the store
+        is <strong>immutable</strong>. You can confirm this by attempting to modify a value retrieved from the store,
         like this:
     </p>
 
@@ -541,7 +574,7 @@ if (pokemon !== null) {{ '{' }}
 }</code></pre>
 
     <p>
-        The code above would produce the following error in the console:
+        This will produce the following error in the console:
     </p>
 
     <div class="img">
@@ -549,28 +582,30 @@ if (pokemon !== null) {{ '{' }}
     </div>
 
     <p>
-        Indeed, values in the store are <strong>immutable</strong>, which means that you cannot directly update them
-        like
-        in the example above. If you never used immutability, it can seem weird but I strongly advice you to read on the
-        subject to understand why it is a better idea to store the object like this.
+        Certainly, the values in the store are <strong>immutable</strong>, which means that you cannot directly modify
+        them as shown in the example. If you are not familiar with immutability, it may seem strange at first, but it is
+        highly recommended to learn more about the concept to understand why it is generally considered a best practice
+        to store objects in this manner.
     </p>
 
     <p>
-        There are multiple ways to ensure immutability in JavaScript and ng-store uses an awesome library called <a
-           href="https://github.com/immerjs/immer"
-           target="_blank">immer</a>. I won't talk about this library in here but I strongly advice you to have a look
-        at it if you want to understand how ng-store works under the hood.
+        There are several methods for implementing immutability in JavaScript, and ng-store uses a powerful library
+        called <a href="https://github.com/immerjs/immer"
+           target="_blank">immer</a> to achieve this. While we won't delve into the details of how immer works in this
+        context, it is highly recommended to learn more about it if you wish to understand the inner workings of
+        ng-store.
     </p>
 
     <p>
-        One important consequence of immutability is that objects that you retrieve from the store using <a
-           href="find">find functions</a> might not always display the most up to date data. Indeed, say you
-        get a value from the store using a find function. If this value changes in the store, your component will still
-        hold a reference to the same object, so the one that hasn't been modified (as the modification triggers the
-        creation of a new object), so you need to have a way to know when a value is modified in order to refresh your
-        component accordingly, which is exactly what select functions are for.
+        It is important to note that due to immutability, objects retrieved from the store using <a href="find">find
+            functions</a> may not always reflect the most current data. For example, if you retrieve a value from the
+        store using a find function and that value is subsequently modified in the store, the object that you have a
+        reference to will not be modified. Instead, a new object will be created to reflect the changes. This means that
+        you need a way to know when a value has been modified in order to update your component accordingly, and this is
+        where select functions come in. They allow you to monitor for changes in the store and refresh your component as
+        needed.
     </p>
-
+<!-- HERE -->
     <p>
         Basically, select functions are the same than find functions but they return observables instead of values or
         entities. For example:
@@ -2438,8 +2473,8 @@ export class PokemonUpsertFormComponent implements OnInit {{ '{' }}
     </p>
 
     <ul>
-        <li>Support for standalone components</li>
         <li>Unit testing</li>
+        <li>Consider the possibility to switch to mutative instead of immer</li>
     </ul>
 
 </main>
