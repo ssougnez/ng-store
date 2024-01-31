@@ -1,6 +1,6 @@
 <ng-template #contentTpl>
   <ng-template #dataTpl>
-    <ng-container *ngTemplateOutlet="template; context: { $implicit: (data$ | async) }"></ng-container>
+    <ng-container *ngTemplateOutlet="template; context: { $implicit: !!data$ ? (data$ | async) : null }"></ng-container>
   </ng-template>
   <ng-container *ngIf="(loaded$ | async) !== true; else dataTpl">
     <ngs-loader-host [size]="loaderSize"
@@ -22,6 +22,6 @@
   </ng-container>
 </ng-template>
 
-<ng-container *ngIf="query$ && loaded$ && data$">
+<ng-container *ngIf="query$ && loaded$">
   <ng-container *ngIf="query$ | async; then errorTpl; else contentTpl"></ng-container>
 </ng-container>

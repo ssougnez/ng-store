@@ -1,6 +1,6 @@
 import { AsyncPipe, JsonPipe, NgIf, NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ContentChild, EventEmitter, inject, Input, OnDestroy, Output, TemplateRef } from '@angular/core';
-import { delay, distinctUntilChanged, filter, map, Observable, shareReplay, Subscription, switchMap, tap } from 'rxjs';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ContentChild, EventEmitter, Input, OnDestroy, Output, TemplateRef, inject } from '@angular/core';
+import { Observable, Subscription, delay, distinctUntilChanged, filter, map, of, shareReplay, switchMap, tap } from 'rxjs';
 import { StoreConfiguration } from '../../models';
 import { mapToError } from '../../operators';
 import { NG_STORE_CONFIG } from '../../tokens';
@@ -37,7 +37,7 @@ export class NgStoreContainerComponent<T> implements OnDestroy {
   public get query$(): Observable<string | null> { return this._query$; }
   public set query$(value: Observable<any>) {
     this._query$ = value && value.pipe(mapToError(), shareReplay(1));
-    this.loaded$ = this._query$.pipe(map(x => x === null), distinctUntilChanged());
+    this.loaded$ = value ? this._query$.pipe(map(x => x === null), distinctUntilChanged()) : of(false);
   }
 
   @Input()

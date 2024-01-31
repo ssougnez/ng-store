@@ -174,8 +174,17 @@ export class NgStore<TStore>  {
   /********************************************************************** PUBLIC **********************************************************************/
 
   /**
+    * Clear the whole store or just a section
+    *
+    * @param selector  Selector to returns the part of the store to clear
+    */
+  public clear<T extends BaseEntity<T['id']>>(selector: (s: TStore) => Entities<T>) {
+    this.removeValuesBy(selector, () => true);
+  }
+
+  /**
    * Returns the first entity based on a predicate
-   * 
+   *
    * @param selector  Selector to returns the part of the store to filter
    * @param predicate Predicate to select the entity
    * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
@@ -190,7 +199,7 @@ export class NgStore<TStore>  {
 
   /**
    * Returns the first entity with a specific key
-   * 
+   *
    * @param selector  Selector to returns the part of the store to filter
    * @param key       Key used for the entity selection
    * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
@@ -208,7 +217,7 @@ export class NgStore<TStore>  {
 
   /**
    * Returns the first entity with a unique id
-   * 
+   *
    * @param selector  Selector to returns the part of the store to filter
    * @param uid       Unique ID used for the entity selection
    * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
@@ -225,7 +234,7 @@ export class NgStore<TStore>  {
 
   /**
   * Returns all entities matching a predicate
-  * 
+  *
   * @param selector   Selector to returns the part of the store to filter
   * @param predicate  Predicate to select the the entities
    * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
@@ -240,7 +249,7 @@ export class NgStore<TStore>  {
 
   /**
    * Returns the first value based on a predicate
-   * 
+   *
    * @param selector  Selector to returns the part of the store to filter
    * @param predicate Predicate to select the value
    * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
@@ -255,7 +264,7 @@ export class NgStore<TStore>  {
 
   /**
    * Returns the first value based on an index
-   * 
+   *
    * @param selector  Selector to returns the part of the store to filter
    * @param index     Index name
    * @param value     Index value
@@ -268,14 +277,14 @@ export class NgStore<TStore>  {
     store: TStore = this.value
   ): T | null {
     const array = selector(store)._indices[index].get(value);
-    const position = (array && array[0]) || null;
+    const position = array && array.length !== 0 ? array[0] : null;
 
     return position !== null ? selector(store)._array[position].value : null;
   }
 
   /**
    * Returns the first value with a specific key
-   * 
+   *
    * @param selector  Selector to returns the part of the store to filter
    * @param key       Key used for the entity selection
    * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
@@ -290,7 +299,7 @@ export class NgStore<TStore>  {
 
   /**
    * Returns all values matching a predicate
-   * 
+   *
    * @param selector  Selector to returns the part of the store to filter
    * @param predicate Predicate to select the the values
    * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
@@ -304,8 +313,32 @@ export class NgStore<TStore>  {
   }
 
   /**
+     * Returns values based on an index
+     *
+     * @param selector  Selector to returns the part of the store to filter
+     * @param index     Index name
+     * @param value     Index value
+     * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
+     */
+  public findValuesByIndex<T extends BaseEntity<T['id']>>(
+    selector: (s: TStore) => Entities<T>,
+    index: Extract<keyof T, string>,
+    value: any,
+    store: TStore = this.value
+  ): T[] | null {
+    const array = selector(store)._indices[index].get(value) || [];
+    const result: T[] = [];
+
+    for (const position of array) {
+      result.push(selector(store)._array[position].value);
+    }
+
+    return result;
+  }
+
+  /**
    * Returns all the entities of a store location
-   * 
+   *
    * @param selector  Function used to locate the entities in the store
    * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
    */
@@ -331,7 +364,7 @@ export class NgStore<TStore>  {
 
   /**
    * Returns whether a specific entity exists in the store
-   * 
+   *
    * @param selector  Location in the store to get the entity from
    * @param key   Key of the entity
    */
@@ -344,7 +377,7 @@ export class NgStore<TStore>  {
 
   /**
    * Returns an observable emitting a value when a specific query has been correctly executed
-   * 
+   *
    * @param query   Query URL
    */
   public isQueryExecuted(query: string): Observable<boolean> {
@@ -353,7 +386,7 @@ export class NgStore<TStore>  {
 
   /**
    * Remove values from the store that match a predicate
-   * 
+   *
    * @param selector  Selector to return the part of the store where values are removed from
    * @param predicate Predicate to match the value
    */
@@ -361,34 +394,14 @@ export class NgStore<TStore>  {
     selector: (s: TStore) => Entities<T>,
     predicate: (item: T) => boolean
   ) {
-    this.update((draft, state) => {
-      const snapshotRoot = selector(state);
-      const draftRoot = selector(draft);
+    const ids = this.findValuesBy(selector, predicate).map(v => v.id);
 
-      if (snapshotRoot) {
-        const array = snapshotRoot._array;
-
-        for (let i = array.length - 1; i >= 0; --i) {
-          if (_isUndefined(array[i]) === false && predicate(array[i].value) === true) {
-            draftRoot._entities.delete(array[i].value.id);
-
-            for (const index of snapshotRoot._indiceNames) {
-              const value = array[i].value[index];
-              const mapArray = (snapshotRoot._indices[index].get(value) || []).filter(p => p !== i);
-
-              draftRoot._indices[index].set(value, mapArray);
-            }
-
-            delete draftRoot._array[i];
-          }
-        }
-      }
-    });
+    this.removeValuesByKeys(selector, ...ids);
   }
 
   /**
    * Remove values from the store by their keys
-   * 
+   *
    * @param selector  Selector to return the part of the store where entities are removed from
    * @param keys      Keys used to remove entities
    */
@@ -423,7 +436,7 @@ export class NgStore<TStore>  {
     }
   }
 
-  /** 
+  /**
    * Reset the store to its initial value
   */
   public reset(): void {
@@ -432,7 +445,7 @@ export class NgStore<TStore>  {
 
   /**
    * Returns an observable matching a part of the store
-   * 
+   *
    * @param selector Selector to select the part of the store
    */
   public select<T>(selector: (s: TStore) => T): Observable<T> {
@@ -445,7 +458,7 @@ export class NgStore<TStore>  {
 
   /**
    * Returns an observable with all the entities in a part of the store
-   * 
+   *
    * @param selector  Selector to fetch the entities
    */
   public selectEntities<T extends BaseEntity<T['id']>>(
@@ -459,7 +472,7 @@ export class NgStore<TStore>  {
 
   /**
    * Returns an observable filtering the store entities based on a selector
-   * 
+   *
    * @param selector  Selector to fetch the entities
    * @param filter    Function to filter the entities
    */
@@ -476,7 +489,7 @@ export class NgStore<TStore>  {
 
   /**
    * Returns an observable filtering the store entities based on a predefined index
-   * 
+   *
    * @param selector  Selector to fetch the entities
    * @param index     Name of the property used to create the index
    * @param value     Index value
@@ -491,8 +504,8 @@ export class NgStore<TStore>  {
 
   /**
    * Returns an observable with the first entity matching a predicate
-   * 
-   * @param selector  Selector to select the part of the store 
+   *
+   * @param selector  Selector to select the part of the store
    * @param predicate Predicate to find the entity
    */
   public selectEntityBy<T extends BaseEntity<T['id']>>(
@@ -508,7 +521,7 @@ export class NgStore<TStore>  {
 
   /**
    * Returns an observable filtering the store entities based on a predefined index. If multiple item correspond to the index, the first one is returned
-   * 
+   *
    * @param selector  Selector to fetch the entities
    * @param index     Name of the property used to create the index
    * @param value     Index value
@@ -526,9 +539,9 @@ export class NgStore<TStore>  {
 
   /**
    * Returns an observable with the first entity with the specified key
-   * 
+   *
    * @param selector  Selector to select the part of the store
-   * @param key       Key used to find the entity   
+   * @param key       Key used to find the entity
    */
   public selectEntityByKey<T extends BaseEntity<T['id']>>(selector: (s: TStore) => Entities<T>, key: T['id']): Observable<Entity<T> | null> {
     return this.select(selector)
@@ -544,7 +557,7 @@ export class NgStore<TStore>  {
 
   /**
    * Returns an observable with the values of entities
-   * 
+   *
    * @param selector Selector to select the part of the store containing the entities
    */
   public selectValues<T extends BaseEntity<T['id']>>(
@@ -561,7 +574,7 @@ export class NgStore<TStore>  {
 
   /**
    * Returns an observable filtering the store entities values based on a selector
-   * 
+   *
    * @param selector  Selector to fetch the values
    * @param filter    Function to filter the values
    */
@@ -574,7 +587,7 @@ export class NgStore<TStore>  {
 
   /**
    * Returns an observable filtering the store entities based on a predefined index
-   * 
+   *
    * @param selector  Selector to fetch the entities
    * @param index     Name of the property used to create the index
    * @param value     Index value
@@ -593,7 +606,7 @@ export class NgStore<TStore>  {
 
   /**
    * Returns an observable filtering the store entities based on a predefined index. If multiple value are stored at the specified index, only the first one is returned.
-   * 
+   *
    * @param selector  Selector to fetch the entities
    * @param index     Name of the property used to create the index
    * @param value     Index value
@@ -611,7 +624,7 @@ export class NgStore<TStore>  {
 
   /**
    * Returns an observable with the value of an entity
-   * 
+   *
    * @param selector Selector to select the entity
    */
   public selectValue<T>(selector: (s: TStore) => Entity<T>): Observable<T> {
@@ -624,7 +637,7 @@ export class NgStore<TStore>  {
 
   /**
    * Returns an observable with the first value matching a predicate
-   * 
+   *
    * @param selector  Selector to select the part of the store containing the entities
    * @param predicate Predicate used to find the value
    */
@@ -641,7 +654,7 @@ export class NgStore<TStore>  {
 
   /**
    * Returns an observable with a value with the specified key
-   * 
+   *
    * @param selector  Selector to select the part of the store containing the entities
    * @param key       Key used to find the value
    */
@@ -662,7 +675,7 @@ export class NgStore<TStore>  {
 
   /**
    * Update the store
-   * 
+   *
    * @param updater Function used to update the store
    */
   public update(updater: (draft: TStore, original: TStore) => void) {
@@ -696,7 +709,7 @@ export class NgStore<TStore>  {
 
   /**
    * Update an entity by key
-   * 
+   *
    * @param selector  Selector used to fetch the entities containing the entity to update
    * @param key       Key used to fetch the entity to update
    * @param updater   Function used to update the entity
@@ -711,7 +724,7 @@ export class NgStore<TStore>  {
 
   /**
    * Update a value by key
-   * 
+   *
    * @param selector  Selector used to fetch the entities containing the value to update
    * @param key       Key used to fetch the value to update
    * @param updater   Function used to update the entity
@@ -726,7 +739,7 @@ export class NgStore<TStore>  {
 
   /**
    * Update values based on a predicate
-   * 
+   *
    * @param root      Selector used to fetch the entities containing the value to update
    * @param selector  Selector used to filter entities
    * @param updater   Function used to update entities
@@ -741,7 +754,7 @@ export class NgStore<TStore>  {
 
   /**
    * Upsert multiple values in the store. If the value already exists in the store, entities are merged.
-   * 
+   *
    * @param selector          Selector defining where the values are added
    * @param values            Values to add
    * @param state             By default, entities are set as "busy: false, loading: false and loaded to true if the value is not null". Can be overriden using this parameter.
@@ -759,7 +772,7 @@ export class NgStore<TStore>  {
 
   /**
    * Upsert a value in the store. If the value already exists in the store, entities are merged.
-   * 
+   *
    * @param selector          Selector defining where the value is added
    * @param value             Value to add
    * @param state             By default, the entity is set as "busy: false, loading: false and loaded to true if the value is not null". Can be overriden using this parameter.
@@ -777,7 +790,7 @@ export class NgStore<TStore>  {
 
   /**
   * Call a HTTP route to delete an entity by key
-  * 
+  *
   * @param url            URL to call
   * @param root           Store entities containing the entity to delete
   * @param key            Key to find the entity in the entities
@@ -822,7 +835,7 @@ export class NgStore<TStore>  {
 
   /**
    * Load all the entities
-   * 
+   *
    * @param url               URL to call
    * @param root              Store location to place the loaded entities
    * @param entitiesLoaded    Defines whether the entities are compltely loaded or not
@@ -867,7 +880,7 @@ export class NgStore<TStore>  {
 
   /**
    * Load entities once based on a custom condition
-   * 
+   *
    * @param url               URL to call to load the entities
    * @param root              Selector to get the location of the store where the entities will be loaded
    * @param entitiesLoaded    Defines whether the retrieved entities are considered as loaded or not
@@ -905,7 +918,7 @@ export class NgStore<TStore>  {
 
   /**
    * Load entities based on a custom optional condition
-   * 
+   *
    * @param url               URL to call to load the entities
    * @param root              Selector to get the location of the store where the entities will be loaded
    * @param dependentRoot     Selector to retrieve the location where the variable defining whether the entities are loading or not is located
@@ -1025,7 +1038,7 @@ export class NgStore<TStore>  {
 
   /**
    * Loads an entity by key. Used to load a partially loaded entity already present in the store or to load a non existing entity in the store.
-   * 
+   *
    * @param url               URL called to load the entity
    * @param root              Location of the store the entity is put
    * @param key               Key of the entity to load
@@ -1044,7 +1057,7 @@ export class NgStore<TStore>  {
 
   /**
    * Call a HTTP route to create a new entity
-   * 
+   *
    * @param url               URL to call
    * @param root              Store location where to put the entity
    * @param data              Data to post
@@ -1068,8 +1081,48 @@ export class NgStore<TStore>  {
   }
 
   /**
+   * Call an HTTP route to update all entities
+   *
+   * @param url                 URL to call
+   * @param root                Store entities containing the entities to update
+   * @param data                Updated data
+   */
+  public putAllEntities<T extends BaseEntity<T['id']>, TResult = T>(
+    url: string,
+    root: (s: TStore) => Entities<T>,
+    data: BaseEntity<T['id']>[]
+  ): Observable<TResult[]> {
+    return this._innerFrom(() => {
+      const existingIds = this.getValues(root).map(v => v.id);
+      const newEntities = data.filter(d => existingIds.includes(d.id) === false);
+
+      this.update(d => {
+        this._setEntitiesStates(d, root, newEntities.length !== 0 ? true : null, null, newEntities.length === 0 && data.length !== 0 ? true : null, null);
+
+        for (const id of existingIds) {
+          this._setEntityStates(d, root, id, null, null, true, null);
+        }
+      });
+
+      return this._http!
+        .put<TResult[]>(url, data)
+        .pipe(
+          finalize(() => {
+            this.update(d => {
+              this._setEntitiesStates(d, root, newEntities.length !== 0 ? false : null, null, newEntities.length === 0 && data.length !== 0 ? false : null, null);
+
+              for (const id of existingIds) {
+                this._setEntityStates(d, root, id, null, null, false, null);
+              }
+            })
+          })
+        );
+    });
+  }
+
+  /**
    * Call a HTTP route to update an existing entity
-   * 
+   *
    * @param url               URL to call
    * @param root              Store entities containing the entity to update
    * @param key               Key of the entity to update
@@ -1108,7 +1161,7 @@ export class NgStore<TStore>  {
 
   /**
    * Rebuild the indices map of an entity list
-   * 
+   *
    * @param root Store entities to rebuild the indices of
    */
   public rebuildIndices<T extends BaseEntity<T['id']>>(
@@ -1142,7 +1195,7 @@ export class NgStore<TStore>  {
   /********************************************************************** PRIVATE **********************************************************************/
 
   /**
-   * 
+   *
    * @param root
    * @param state
    */
@@ -1151,7 +1204,7 @@ export class NgStore<TStore>  {
   }
 
   /**
-   * 
+   *
    * @param draft
    * @param snapshot
    * @param selector
@@ -1197,7 +1250,7 @@ export class NgStore<TStore>  {
   }
 
   /**
-   * 
+   *
    * @param root
    * @param values
    * @param state
@@ -1226,7 +1279,7 @@ export class NgStore<TStore>  {
               map.set(oldValue, (map.get(oldValue) || []).filter(p => p !== position));
             }
 
-            (map.get(newValue) || []).push(position);
+            map.set(newValue, (map.get(newValue) ?? []).concat(position));
           }
         }
 
@@ -1295,7 +1348,7 @@ export class NgStore<TStore>  {
   }
 
   /**
-   * 
+   *
    * @param url
    * @param root
    * @param selector
@@ -1342,7 +1395,7 @@ export class NgStore<TStore>  {
   }
 
   /**
-   * 
+   *
    * @param data
    */
   private _removeLoadQuery(data: string | ExternalCall<unknown>) {
@@ -1350,7 +1403,7 @@ export class NgStore<TStore>  {
   }
 
   /**
-   * 
+   *
    * @param root
    * @param loading
    * @param deleting
@@ -1382,7 +1435,7 @@ export class NgStore<TStore>  {
   }
 
   /**
-   * 
+   *
    * @param root
    * @param key
    * @param loading
@@ -1424,7 +1477,7 @@ export class NgStore<TStore>  {
   }
 
   /**
-   * 
+   *
    * @param map
    * @param id
    * @param flag
