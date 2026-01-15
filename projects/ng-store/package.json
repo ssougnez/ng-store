@@ -1,0 +1,14 @@
+{
+  "name": "@sfpd/ng-store",
+  "version": "0.0.0",
+  "displayName": "@sfpd/ng-store",
+  "peerDependencies": {
+    "@angular/common": ">= 21.0.0",
+    "@angular/core": ">= 21.0.0",
+    "immer": ">= 10.0.0",
+    "rxjs": ">= 7.0.0"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  }
+}

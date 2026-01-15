@@ -1,0 +1,28 @@
+{
+  "name": "ng-store",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "package": "ng build ng-store && cd dist/ng-store && npm pack"
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/common": "^21.0.0",
+    "@angular/compiler": "^21.0.0",
+    "@angular/core": "^21.0.0",
+    "@angular/platform-browser": "^21.0.0",
+    "immer": "^10.0.3",
+    "rxjs": "~7.8.1",
+    "tslib": "^2.3.0",
+    "zone.js": "~0.15.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^21.0.0",
+    "@angular/cli": "^21.0.0",
+    "@angular/compiler-cli": "^21.0.0",
+    "ng-packagr": "^21.0.0",
+    "typescript": "~5.9.0"
+  }
+}

@@ -1,0 +1,27 @@
+@if (loading() === true) {
+  @if (loaderType() === 'component') {
+    <div class="loader">
+      <ngs-loader-host [size]="loaderSize()" />
+    </div>
+  }
+  @else if (loaderType() === 'text') {
+    {{ loaderText() }}
+  }
+  @else if (loaderType() === 'template') {
+    <ng-container *ngTemplateOutlet="loaderTemplate()" />
+  }
+} @else {
+  @if (error(); as err) {
+    @if (!config.errorComponent && errorTemplate() === null) {
+      <pre>{{ error | json }}</pre>
+    }
+    @else if (config.errorComponent && errorTemplate() === null) {
+      <ngs-error-host [error]="err" />
+    }
+    @else if (errorTemplate() !== null) {
+      <ng-container *ngTemplateOutlet="errorTemplate(); context: { $implicit: err }" />
+    }
+  } @else {
+    <ng-container *ngTemplateOutlet="template()!; context: { ngsTemplate: data() }" />
+  }
+}
