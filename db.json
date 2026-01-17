@@ -1,0 +1,66 @@
+{
+  "authors": [
+    {
+      "id": 1,
+      "name": "Victor Hugo",
+      "country": "France",
+      "booksLoaded": false
+    },
+    {
+      "id": 2,
+      "name": "George Orwell",
+      "country": "United Kingdom",
+      "booksLoaded": false
+    },
+    {
+      "id": 3,
+      "name": "Gabriel Garcia Marquez",
+      "country": "Colombia",
+      "booksLoaded": false
+    }
+  ],
+  "books": [
+    {
+      "id": 1,
+      "title": "Les Miserables",
+      "year": 1862,
+      "authorId": 1,
+      "isPublished": true
+    },
+    {
+      "id": 2,
+      "title": "Notre-Dame de Paris",
+      "year": 1831,
+      "authorId": 1,
+      "isPublished": false
+    },
+    {
+      "id": 3,
+      "title": "1984",
+      "year": 1949,
+      "authorId": 2,
+      "isPublished": true
+    },
+    {
+      "id": 4,
+      "title": "Animal Farm",
+      "year": 1945,
+      "authorId": 2,
+      "isPublished": false
+    },
+    {
+      "id": 5,
+      "title": "One Hundred Years of Solitude",
+      "year": 1967,
+      "authorId": 3,
+      "isPublished": true
+    },
+    {
+      "id": 6,
+      "title": "Love in the Time of Cholera",
+      "year": 1985,
+      "authorId": 3,
+      "isPublished": false
+    }
+  ]
+}

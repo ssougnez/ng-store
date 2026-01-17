@@ -1,0 +1,37 @@
+<section class="panel books-panel">
+  <h2>Books</h2>
+
+  <ngs-container [action]="booksAction"
+                 loaderType="text"
+                 loaderText="Loading books...">
+    <ng-container *ngsTemplate="booksAction as books">
+
+      @if (books.length === 0) {
+        <p class="empty">No books found for this author.</p>
+      } @else {
+        <ul class="book-list">
+
+          @for (book of books; track book.id) {
+            <li class="book-item">
+              <div class="book-info">
+                <strong>{{ book.title }}</strong>
+                <span>{{ book.year }}</span>
+              </div>
+              <div class="book-actions">
+                <span class="badge" [class.published]="book.isPublished">
+                  {{ book.isPublished ? 'Published' : 'Draft' }}
+                </span>
+                <button (click)="togglePublishedAction.execute(book)"
+                        [disabled]="togglePublishedAction.processing()">
+                  {{ book.isPublished ? 'Unpublish' : 'Publish' }}
+                </button>
+              </div>
+            </li>
+          }
+
+        </ul>
+      }
+
+    </ng-container>
+  </ngs-container>
+</section>

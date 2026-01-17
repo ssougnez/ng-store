@@ -1,0 +1,39 @@
+<main class="main">
+  <div class="container">
+    <h1>{{ title() }}</h1>
+    <p>Demo of &#64;areaprog/ng-store with loadEntities</p>
+
+    <div class="layout">
+      <!-- Authors Panel -->
+      <app-authors-list (authorSelected)="onAuthorSelected($event)" />
+
+      <!-- Books Panel -->
+      @if (selectedAuthorId(); as authorId) {
+        <app-books-list [authorId]="authorId" />
+      } @else {
+        <section class="panel books-panel">
+          <h2>Books</h2>
+          <p class="empty">Select an author to see their books.</p>
+        </section>
+      }
+    </div>
+
+    <!-- Debug Section -->
+    <section class="debug-panel">
+      <h2>Store Debug</h2>
+
+      <h3>Authors Entities</h3>
+      @if (authorsEntities$ | async; as entities) {
+        <ul class="entity-list">
+          @for (entity of entities; track entity.uid) {
+            <li [class.busy]="entity.busy">
+              <code>{{ entity | json }}</code>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+</main>
+
+<router-outlet />

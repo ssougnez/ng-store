@@ -1,0 +1,8 @@
+<div class="loader-container">
+  <div class="spinner"
+       [style.width]="size()"
+       [style.height]="size()"></div>
+  @if (text()) {
+    <span>{{ text() }}</span>
+  }
+</div>

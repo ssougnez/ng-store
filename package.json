@@ -4,7 +4,13 @@
   "scripts": {
     "ng": "ng",
     "build": "ng build",
-    "watch": "ng build --watch --configuration development",
+    "build:lib": "ng build ng-store",
+    "build:test": "ng build test-app",
+    "watch:lib": "ng build ng-store --watch",
+    "serve:test": "ng serve test-app",
+    "server": "json-server --watch db.json --port 3000 --delay 500",
+    "db:reset": "shx cp db.template.json db.json",
+    "dev": "npm run db:reset && concurrently -k -n lib,app,api -c blue,green,yellow \"ng build ng-store --watch\" \"wait-on -d 5000 dist/ng-store/fesm2022/areaprog-ng-store.mjs && ng serve test-app\" \"json-server --watch db.json --port 3000 --delay 500\"",
     "package": "ng build ng-store && cd dist/ng-store && npm pack"
   },
   "private": true,
@@ -13,6 +19,7 @@
     "@angular/compiler": "^21.0.0",
     "@angular/core": "^21.0.0",
     "@angular/platform-browser": "^21.0.0",
+    "@angular/router": "^21.1.0",
     "immer": "^10.0.3",
     "rxjs": "~7.8.1",
     "tslib": "^2.3.0",
@@ -22,7 +29,11 @@
     "@angular/build": "^21.0.0",
     "@angular/cli": "^21.0.0",
     "@angular/compiler-cli": "^21.0.0",
+    "concurrently": "^9.2.1",
+    "json-server": "^0.17.4",
     "ng-packagr": "^21.0.0",
-    "typescript": "~5.9.0"
+    "shx": "^0.4.0",
+    "typescript": "~5.9.0",
+    "wait-on": "^9.0.3"
   }
 }

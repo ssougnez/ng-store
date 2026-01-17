@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ng-store is an Angular library (`@sfpd/ng-store`) that provides reactive state management using Immer for immutable updates. It's designed to manage collections of entities with built-in support for loading states, HTTP operations, and indexing.
+ng-store is an Angular library (`@areaprog/ng-store`) that provides reactive state management using Immer for immutable updates. It's designed to manage collections of entities with built-in support for loading states, HTTP operations, and indexing.
 
 ## Build Commands
 
@@ -71,5 +71,9 @@ The store expects an HTTP client implementing `IHttpClient` interface (get, post
 
 - Angular 20+
 - Immer (for immutable state updates)
-- @sfpd/rxjs-plus (peer dependency)
+- @areaprog/rxjs-plus (peer dependency)
 - RxJS
+
+## Windows Notes
+
+Always delete the `NUL` file if it gets created. On Windows, commands like `> NUL` create a file instead of redirecting to null device.

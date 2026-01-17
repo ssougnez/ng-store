@@ -12,7 +12,7 @@
     "noFallthroughCasesInSwitch": true,
     "sourceMap": true,
     "paths": {
-      "@sfpd/ng-store": [
+      "@areaprog/ng-store": [
         "dist/ng-store"
       ]
     },
@@ -32,5 +32,10 @@
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
     "strictTemplates": true
-  }
+  },
+  "references": [
+    {
+      "path": "./projects/test-app/tsconfig.app.json"
+    }
+  ]
 }

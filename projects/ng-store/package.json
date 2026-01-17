@@ -1,7 +1,7 @@
 {
-  "name": "@sfpd/ng-store",
+  "name": "@areaprog/ng-store",
   "version": "0.0.0",
-  "displayName": "@sfpd/ng-store",
+  "displayName": "@areaprog/ng-store",
   "peerDependencies": {
     "@angular/common": ">= 21.0.0",
     "@angular/core": ">= 21.0.0",
