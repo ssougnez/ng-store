@@ -37,4 +37,12 @@ export class BookService {
       book
     );
   }
+
+  public delete(bookId: number): Observable<Book> {
+    return this._store.deleteEntityByKey(
+      `/api/books/${bookId}`,
+      s => s.books,
+      bookId
+    );
+  }
 }

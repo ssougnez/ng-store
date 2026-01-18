@@ -795,7 +795,13 @@ export class NgStore<TStore> {
         return throwError(() => 'The entity was not found in the store');
       }
 
-      return this._http.delete<TReturn>(url);
+      const autoDelete = this._config.automaticDelete !== false;
+
+      return this._http
+        .delete<TReturn>(url)
+        .pipe(
+          tap(() => autoDelete && this.removeEntitiesByKeys(root, key))
+        );
     });
   }
 
@@ -1097,7 +1103,7 @@ export class NgStore<TStore> {
     data: unknown
   ): Observable<TResult> {
     return this._innerFrom(() => {
-      const autoInsert = this._config.automaticPostInsertion !== false;
+      const autoInsert = this._config.automaticPost !== false;
 
       return this._http
         .post<TResult>(url, data)
@@ -1120,7 +1126,7 @@ export class NgStore<TStore> {
     data: BaseEntity<T['id']>[]
   ): Observable<TResult[]> {
     return this._innerFrom(() => {
-      const autoInsert = this._config.automaticPutInsertion !== false;
+      const autoInsert = this._config.automaticPut !== false;
 
       return this._http
         .put<TResult[]>(url, data)
@@ -1145,7 +1151,7 @@ export class NgStore<TStore> {
     data: unknown
   ): Observable<TResult> {
     return this._innerFrom(() => {
-      const autoInsert = this._config.automaticPutInsertion !== false;
+      const autoInsert = this._config.automaticPut !== false;
 
       return this._http
         .put<TResult>(url, data)

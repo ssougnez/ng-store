@@ -25,6 +25,11 @@
                         [disabled]="togglePublishedAction.processing()">
                   {{ book.isPublished ? 'Unpublish' : 'Publish' }}
                 </button>
+                <button class="delete-btn"
+                        (click)="deleteBookAction.execute(book.id)"
+                        [disabled]="deleteBookAction.processing()">
+                  Delete
+                </button>
               </div>
             </li>
           }

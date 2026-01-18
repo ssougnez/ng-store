@@ -79,6 +79,14 @@ h2 {
       opacity: 0.6;
       cursor: not-allowed;
     }
+
+    &.delete-btn {
+      background: #dc3545;
+
+      &:hover {
+        background: #c82333;
+      }
+    }
   }
 }
 

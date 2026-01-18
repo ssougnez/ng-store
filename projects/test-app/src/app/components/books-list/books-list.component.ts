@@ -27,4 +27,8 @@ export class BooksListComponent {
   protected readonly togglePublishedAction = new ExecuteAction<Book, Book>({
     query: book => this._bookService.togglePublished(book)
   });
+
+  protected readonly deleteBookAction = new ExecuteAction<number, Book>({
+    query: bookId => this._bookService.delete(bookId)
+  });
 }
