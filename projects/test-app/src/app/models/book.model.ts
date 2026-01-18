@@ -6,3 +6,10 @@ export interface Book extends BaseEntity<number> {
   authorId: number;
   isPublished: boolean;
 }
+
+export type BookCreationData = {
+  title: string;
+  year: number;
+  authorId: number;
+  isPublished: boolean;
+}

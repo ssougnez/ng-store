@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { findStoreValueByKey, NgStore } from '@areaprog/ng-store';
 import { AppStore } from '../models/store.model';
 import { Author } from '../models/author.model';
-import { Book } from '../models/book.model';
+import { Book, BookCreationData } from '../models/book.model';
 
 @Injectable({ providedIn: 'root' })
 export class BookService {
@@ -27,6 +27,14 @@ export class BookService {
       s => s.books,
       book.id,
       updatedBook
+    );
+  }
+
+  public add(book: BookCreationData): Observable<Book> {
+    return this._store.postEntity<Book>(
+      '/api/books',
+      s => s.books,
+      book
     );
   }
 }

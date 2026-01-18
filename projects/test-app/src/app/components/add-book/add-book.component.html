@@ -1,0 +1,55 @@
+<div class="add-book">
+  <button class="toggle-btn" (click)="toggleForm()">
+    {{ showForm() ? 'Cancel' : '+ Add Book' }}
+  </button>
+
+  @if (showForm()) {
+    <form class="book-form" (ngSubmit)="submit()">
+      <div class="form-group">
+        <label for="title">Title</label>
+        <input
+          id="title"
+          type="text"
+          [ngModel]="title()"
+          (ngModelChange)="title.set($event)"
+          name="title"
+          placeholder="Book title"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="year">Year</label>
+        <input
+          id="year"
+          type="number"
+          [ngModel]="year()"
+          (ngModelChange)="year.set($event)"
+          name="year"
+          placeholder="Publication year"
+          required
+        />
+      </div>
+
+      <div class="form-group checkbox-group">
+        <label for="isPublished">
+          <input
+            id="isPublished"
+            type="checkbox"
+            [ngModel]="isPublished()"
+            (ngModelChange)="isPublished.set($event)"
+            name="isPublished"
+          />
+          Published
+        </label>
+      </div>
+
+      <button
+        type="submit"
+        class="submit-btn"
+        [disabled]="addAction.processing() || !title() || !year()">
+        {{ addAction.processing() ? 'Adding...' : 'Add Book' }}
+      </button>
+    </form>
+  }
+</div>

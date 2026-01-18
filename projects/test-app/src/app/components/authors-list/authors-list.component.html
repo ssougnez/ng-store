@@ -13,6 +13,7 @@
 
           @for (author of authors; track author.id) {
             <li class="author-item"
+                [class.selected]="author.id === selectedAuthorId()"
                 (click)="selectAuthor(author)">
               <div class="author-info">
                 <strong>{{ author.name }}</strong>
@@ -25,4 +26,6 @@
 
     </ng-container>
   </ngs-container>
+
+  <app-add-author />
 </section>

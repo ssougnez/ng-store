@@ -1182,17 +1182,22 @@ export class NgStore<TStore> {
    * @param root              Store location where to put the entity
    * @param data              Data to post
    */
-  public postEntity<T extends BaseEntity<T['id']>, TResult = any>(
+  public postEntity<T extends BaseEntity<T['id']>, TResult = T>(
     url: string,
     root: (s: TStore) => Entities<T>,
     data: unknown
   ): Observable<TResult> {
     return this._innerFrom(() => {
+      const autoInsert = this._config.automaticPostInsertion !== false;
+
       this.update(d => this._setEntitiesStates(d, root, true, null, null, null));
 
       return this._http
         .post<TResult>(url, data)
-        .pipe(finalize(() => this.update(d => this._setEntitiesStates(d, root, false, null, null, null))));
+        .pipe(
+          tap(result => autoInsert && this.upsertValue(root, result as unknown as T)),
+          finalize(() => this.update(d => this._setEntitiesStates(d, root, false, null, null, null)))
+        );
     });
   }
 

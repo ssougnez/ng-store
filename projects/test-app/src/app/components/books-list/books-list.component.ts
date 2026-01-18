@@ -3,10 +3,11 @@ import { ExecuteAction, NgSignalStoreContainerComponent, NgStore, NgStoreTemplat
 import { AppStore } from '../../models/store.model';
 import { Book } from '../../models/book.model';
 import { BookService } from '../../services/book.service';
+import { AddBookComponent } from '../add-book/add-book.component';
 
 @Component({
   selector: 'app-books-list',
-  imports: [NgSignalStoreContainerComponent, NgStoreTemplateDirective],
+  imports: [NgSignalStoreContainerComponent, NgStoreTemplateDirective, AddBookComponent],
   templateUrl: './books-list.component.html',
   styleUrl: './books-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

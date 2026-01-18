@@ -12,4 +12,5 @@ export type StoreConfiguration = {
   defaultLoaderText?: () => string;
   defaultExecuteActionErrorHandler?: (err: Error) => void;
   automaticPutInsertion?: boolean;
+  automaticPostInsertion?: boolean;
 }

@@ -5,3 +5,8 @@ export interface Author extends BaseEntity<number> {
   country: string;
   booksLoaded: boolean;
 }
+
+export type AuthorCreationData = {
+  name: string;
+  country: string;
+}
