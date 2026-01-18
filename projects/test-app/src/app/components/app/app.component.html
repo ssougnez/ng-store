@@ -26,7 +26,7 @@
       @if (authorsEntities$ | async; as entities) {
         <ul class="entity-list">
           @for (entity of entities; track entity.uid) {
-            <li [class.busy]="entity.busy">
+            <li>
               <code>{{ entity | json }}</code>
             </li>
           }

@@ -10,9 +10,7 @@ type BooleanProperties<T> = { [k in keyof T]: T[k] extends boolean ? k : never }
 type OnlyBoolean<T> = { [k in BooleanProperties<T>]: boolean | null | undefined };
 
 type EntityStateOption = {
-  loading?: boolean,
-  loaded?: boolean,
-  busy?: boolean
+  loaded?: boolean
 }
 
 let nextUniqueId = 0;
@@ -39,19 +37,12 @@ export type Entities<T extends BaseEntity<T['id']>> = {
   };
 
   loaded: boolean | null;
-  adding: boolean;
-  loading: boolean;
-  busy: boolean;
 }
 
 export type Entity<T> = {
   readonly uid: number;
 
-  busy: boolean;
-  deleting: boolean;
   loaded: boolean;
-  loading: boolean;
-  updating: boolean;
   value: T;
 }
 
@@ -59,11 +50,7 @@ export const createEntity = <T>(value: T): Entity<T> => {
   return {
     uid: nextUniqueId++,
     loaded: !!value,
-    loading: false,
-    value: value,
-    busy: false,
-    deleting: false,
-    updating: false
+    value: value
   }
 }
 
@@ -76,10 +63,7 @@ export const createEntities = <T extends BaseEntity<T['id']>>(values: T[] = [], 
     _entities: new Map<T['id'], number>(),
     _indiceNames: new Set<Extract<keyof T, string>>(indices),
 
-    busy: false,
-    loaded: false,
-    adding: false,
-    loading: false
+    loaded: false
   }
 
   for (const index of indices) {
@@ -144,11 +128,7 @@ export class NgStore<TStore> {
 
   /****************************************************************** VARIABLES ******************************************************************/
 
-  private _addingStates: Map<number, number> = new Map<number, number>();
   private _config: StoreConfiguration;
-  private _deletingStates: Map<number, number> = new Map<number, number>();
-  private _loadingStates: Map<number, number> = new Map<number, number>();
-  private _updatingStates: Map<number, number> = new Map<number, number>();
   private _executingQueries: Map<string, Observable<any>> = new Map<string, Observable<any>>();
   private _executedQueries: Set<string> = new Set<string>();
   private _executedQueriesSubject: BehaviorSubject<Set<string>> = new BehaviorSubject<Set<string>>(this._executedQueries);
@@ -769,10 +749,8 @@ export class NgStore<TStore> {
    *
    * @param selector          Selector defining where the values are added
    * @param values            Values to add
-   * @param state             By default, entities are set as "busy: false, loading: false and loaded to true if the value is not null". Can be overriden using this parameter.
-   * @param state.busy        Defines whether the entity is currently busy
-   * @param state.loading     Defines whether the entity is currently loading
-   * @param state.loaded      Defines whether the entity is currently loaded. Could be use to partially loaded entity.
+   * @param state             By default, entities are set as "loaded: true if the value is not null". Can be overriden using this parameter.
+   * @param state.loaded      Defines whether the entity is currently loaded. Could be used for partially loaded entities.
    */
   public upsertValues<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -787,10 +765,8 @@ export class NgStore<TStore> {
    *
    * @param selector          Selector defining where the value is added
    * @param value             Value to add
-   * @param state             By default, the entity is set as "busy: false, loading: false and loaded to true if the value is not null". Can be overriden using this parameter.
-   * @param state.busy        Defines whether the entity is currently busy
-   * @param state.loading     Defines whether the entity is currently loading
-   * @param state.loaded      Defines whether the entity is currently loaded. Could be use to partially loaded entity.
+   * @param state             By default, the entity is set as "loaded: true if the value is not null". Can be overriden using this parameter.
+   * @param state.loaded      Defines whether the entity is currently loaded. Could be used for partially loaded entities.
    */
   public upsertValue<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -819,25 +795,7 @@ export class NgStore<TStore> {
         return throwError(() => 'The entity was not found in the store');
       }
 
-      if (entity.deleting === true) {
-        return throwError(() => 'The entity is already being deleted by another process');
-      }
-
-      this.update(d => {
-        this._setEntitiesStates(d, root, null, null, null, true);
-        this._setEntityStates(d, root, key, null, null, null, true);
-      })
-
-      return this._http
-        .delete<TReturn>(url)
-        .pipe(
-          finalize(() => {
-            this.update(d => {
-              this._setEntitiesStates(d, root, null, null, null, false);
-              this._setEntityStates(d, root, key, null, null, null, false);
-            });
-          })
-        );
+      return this._http.delete<TReturn>(url);
     });
   }
 
@@ -870,8 +828,6 @@ export class NgStore<TStore> {
 
       if (entities.length !== 0) {
         this.update(d => {
-          this._setEntitiesStates(d, root, null, true, null, null);
-
           entities.forEach(e => {
             const value = this.findValueByKey(dependentRoot, e.key, d) as (OnlyBoolean<TDependent> | null);
 
@@ -909,13 +865,9 @@ export class NgStore<TStore> {
                 });
               });
 
-
               return throwError(() => new Error(err));
             }),
-            finalize(() => {
-              this.update(d => this._setEntitiesStates(d, root, null, false, null, null));
-              this._removeLoadQuery(url);
-            })
+            finalize(() => this._removeLoadQuery(url))
           )
       }
 
@@ -941,10 +893,7 @@ export class NgStore<TStore> {
       const state = root(this.value).loaded;
 
       if (state !== true || force === true) {
-        this.update(d => {
-          this._setEntitiesStates(d, root, null, true, null, null);
-          root(d).loaded = null;
-        });
+        this.update(d => root(d).loaded = null);
 
         return this._getLoadQuery<(T | TData) | (T | TData)[]>(url)
           .pipe(
@@ -958,7 +907,6 @@ export class NgStore<TStore> {
               return throwError(() => new Error(err));
             }),
             finalize(() => {
-              this.update(d => this._setEntitiesStates(d, root, null, false, null, null));
               this._removeLoadQuery(url);
             })
           );
@@ -967,30 +915,6 @@ export class NgStore<TStore> {
       return of(this.getValues(root));
     });
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   /**
    * Load entities once based on a custom condition
@@ -1008,8 +932,6 @@ export class NgStore<TStore> {
   ): Observable<T[]> {
     return this._innerFrom(() => {
       if (this._executedQueries.has(url) === false || force === true) {
-        this.update(d => this._setEntitiesStates(d, root, null, true, null, null));
-
         return this._getLoadQuery<(T | TData) | (T | TData)[]>(url)
           .pipe(
             map(data => Array.isArray(data) ? data : [data]),
@@ -1019,10 +941,7 @@ export class NgStore<TStore> {
               this._executedQueries.add(url);
               this._executedQueriesSubject.next(this._executedQueries);
             }),
-            finalize(() => {
-              this.update(d => this._setEntitiesStates(d, root, null, false, null, null));
-              this._removeLoadQuery(url);
-            })
+            finalize(() => this._removeLoadQuery(url))
           )
       }
 
@@ -1061,8 +980,6 @@ export class NgStore<TStore> {
 
       if (state !== true || force === true) {
         this.update(d => {
-          this._setEntitiesStates(d, root, null, true, null, null);
-
           (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = null;
         });
 
@@ -1077,10 +994,7 @@ export class NgStore<TStore> {
 
               return throwError(() => new Error(err));
             }),
-            finalize(() => {
-              this.update(d => this._setEntitiesStates(d, root, null, false, null, null));
-              this._removeLoadQuery(url);
-            })
+            finalize(() => this._removeLoadQuery(url))
           )
       }
 
@@ -1111,8 +1025,6 @@ export class NgStore<TStore> {
 
       if (state !== true || force === true) {
         this.update(d => {
-          this._setEntitiesStates(d, root, null, true, null, null);
-
           (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = null;
         });
 
@@ -1126,10 +1038,7 @@ export class NgStore<TStore> {
 
               return throwError(() => new Error(err));
             }),
-            finalize(() => {
-              this.update(d => this._setEntitiesStates(d, root, null, false, null, null));
-              this._removeLoadQuery(url);
-            })
+            finalize(() => this._removeLoadQuery(url))
           )
       }
 
@@ -1190,13 +1099,10 @@ export class NgStore<TStore> {
     return this._innerFrom(() => {
       const autoInsert = this._config.automaticPostInsertion !== false;
 
-      this.update(d => this._setEntitiesStates(d, root, true, null, null, null));
-
       return this._http
         .post<TResult>(url, data)
         .pipe(
-          tap(result => autoInsert && this.upsertValue(root, result as unknown as T)),
-          finalize(() => this.update(d => this._setEntitiesStates(d, root, false, null, null, null)))
+          tap(result => autoInsert && this.upsertValue(root, result as unknown as T))
         );
     });
   }
@@ -1214,29 +1120,12 @@ export class NgStore<TStore> {
     data: BaseEntity<T['id']>[]
   ): Observable<TResult[]> {
     return this._innerFrom(() => {
-      const existingIds = this.getValues(root).map(v => v.id);
-      const newEntities = data.filter(d => existingIds.includes(d.id) === false);
-
-      this.update(d => {
-        this._setEntitiesStates(d, root, newEntities.length !== 0 ? true : null, null, newEntities.length === 0 && data.length !== 0 ? true : null, null);
-
-        for (const id of existingIds) {
-          this._setEntityStates(d, root, id, null, null, true, null);
-        }
-      });
+      const autoInsert = this._config.automaticPutInsertion !== false;
 
       return this._http
         .put<TResult[]>(url, data)
         .pipe(
-          finalize(() => {
-            this.update(d => {
-              this._setEntitiesStates(d, root, newEntities.length !== 0 ? false : null, null, newEntities.length === 0 && data.length !== 0 ? false : null, null);
-
-              for (const id of existingIds) {
-                this._setEntityStates(d, root, id, null, null, false, null);
-              }
-            })
-          })
+          tap(results => autoInsert && this.upsertValues(root, results as unknown as T[]))
         );
     });
   }
@@ -1256,24 +1145,12 @@ export class NgStore<TStore> {
     data: unknown
   ): Observable<TResult> {
     return this._innerFrom(() => {
-      const entity = this.findEntityByKey(root, key);
-      const state = entity ? entity.loaded : false;
       const autoInsert = this._config.automaticPutInsertion !== false;
 
-      this.update(d => {
-        this._setEntitiesStates(d, root, entity === null ? true : null, null, entity !== null ? true : null, null);
-        this._setEntityStates(d, root, key, null, null, true, null);
-      })
       return this._http
         .put<TResult>(url, data)
         .pipe(
-          tap(result => autoInsert && this.upsertValue(root, result as unknown as T)),
-          finalize(() => {
-            this.update(d => {
-              this._setEntitiesStates(d, root, entity === null ? false : null, null, entity !== null ? false : null, null);
-              this._setEntityStates(d, root, key, state, null, false, null);
-            })
-          })
+          tap(result => autoInsert && this.upsertValue(root, result as unknown as T))
         );
     });
   }
@@ -1464,24 +1341,16 @@ export class NgStore<TStore> {
       const state = entity ? entity.loaded : false;
 
       if (entity === null || state === false || force === true) {
-        this.update(d => {
-          this._setEntitiesStates(d, root, null, true, null, null);
-
-          entity !== null && this._setEntityStates(d, root, entity.value.id, null, true, null, null);
-        });
-
         return this._getLoadQuery<T | TData>(url)
           .pipe(
             map(data => data as T),
             tap(data => this.upsertValue(root, data, { loaded: entityLoaded })),
-            tap(data => this.update(d => this._setEntityStates(d, root, data.id, entityLoaded, false, null, null))),
+            tap(data => this.update(d => this._setEntityStates(d, root, data.id, entityLoaded))),
             tap(() => hasFailed = false),
             finalize(() => {
-              this.update(d => {
-                this._setEntityStates(d, root, entity?.value?.id, hasFailed === true ? false : undefined, false, null, null);
-                this._setEntitiesStates(d, root, null, false, null, null);
-              });
-
+              if (hasFailed && entity?.value?.id) {
+                this.update(d => this._setEntityStates(d, root, entity.value.id, false));
+              }
               this._removeLoadQuery(url);
             })
           );
@@ -1497,40 +1366,11 @@ export class NgStore<TStore> {
   }
 
   /** */
-  private _setEntitiesStates<T extends BaseEntity<T['id']>>(
-    draft: TStore,
-    root: (s: TStore) => Entities<T>,
-    adding: boolean | null = null,
-    loading: boolean | null = null,
-    updating: boolean | null = null,
-    deleting: boolean | null = null
-  ) {
-    const entities = root(draft);
-
-    if (entities) {
-      this._updateStateMaps(this._addingStates, entities.uid, adding);
-      this._updateStateMaps(this._loadingStates, entities.uid, loading);
-      this._updateStateMaps(this._updatingStates, entities.uid, updating);
-      this._updateStateMaps(this._deletingStates, entities.uid, deleting);
-
-      entities.loading = (this._loadingStates.get(entities.uid) || 0) > 0;
-      entities.adding = !!this._addingStates.get(entities.uid);
-      entities.busy = (this._addingStates.get(entities.uid) || 0) +
-        (this._loadingStates.get(entities.uid) || 0) +
-        (this._updatingStates.get(entities.uid) || 0) +
-        (this._deletingStates.get(entities.uid) || 0) > 0;
-    }
-  }
-
-  /** */
   private _setEntityStates<T extends BaseEntity<T['id']>, TEntity>(
     draft: TStore,
     root: (s: TStore) => (Entities<T> | Entity<TEntity>),
     key: T['id'],
-    loaded: boolean | null = null,
-    loading: boolean | null = null,
-    updating: boolean | null = null,
-    deleting: boolean | null = null
+    loaded: boolean | null = null
   ) {
     let entity = key !== null
       ? this.findEntityByKey(root as (s: TStore) => Entities<T>, key, draft)
@@ -1540,30 +1380,8 @@ export class NgStore<TStore> {
       entity = null;
     }
 
-    if (entity) {
-      this._updateStateMaps(this._loadingStates, entity.uid, loading);
-      this._updateStateMaps(this._updatingStates, entity.uid, updating);
-      this._updateStateMaps(this._deletingStates, entity.uid, deleting);
-
-      if (loaded !== null) {
-        entity.loaded = loaded;
-      }
-
-      entity.loading = (this._loadingStates.get(entity.uid) || 0) > 0;
-      entity.updating = (this._updatingStates.get(entity.uid) || 0) > 0;
-      entity.deleting = (this._deletingStates.get(entity.uid) || 0) > 0;
-
-      entity.busy = entity.loading || entity.deleting || entity.updating;
-    }
-  }
-
-  /** */
-  private _updateStateMaps(map: Map<number, number>, id: number, flag: boolean | null) {
-    if (flag === true) {
-      map.set(id, (map.get(id) || 0) + 1);
-    }
-    else if (flag === false) {
-      map.set(id, (map.get(id) || 0) - 1);
+    if (entity && loaded !== null) {
+      entity.loaded = loaded;
     }
   }
 
