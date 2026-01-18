@@ -1,50 +1,25 @@
 import { Inject, inject, Injectable } from '@angular/core';
 import { filterArray, mapArray } from '../operators';
-import { enableMapSet, produce } from 'immer';
+import { produce } from 'immer';
 import { BehaviorSubject, catchError, distinctUntilChanged, filter, finalize, map, Observable, of, share, take, tap, throwError } from 'rxjs';
-import { StoreConfiguration } from '../models';
+import {
+  BaseEntity,
+  BooleanProperties,
+  Entities,
+  Entity,
+  EntityStateOption,
+  ExternalCall,
+  IHttpClient,
+  OnlyBoolean,
+  StoreConfiguration,
+  StoreEntity
+} from '../models';
 import { NG_STORE_CONFIG } from '../tokens';
 
-type StoreEntity = Entities<BaseEntity<unknown>> | Entity<unknown>;
-type BooleanProperties<T> = { [k in keyof T]: T[k] extends boolean ? k : never }[keyof T];
-type OnlyBoolean<T> = { [k in BooleanProperties<T>]: boolean | null | undefined };
-
-type EntityStateOption = {
-  loaded?: boolean
-}
+// Re-export types for backward compatibility
+export { BaseEntity, Entities, Entity, ExternalCall, IHttpClient } from '../models';
 
 let nextUniqueId = 0;
-
-export interface IHttpClient {
-  delete<T>(url: string): Observable<T>;
-  get<T>(url: string): Observable<T>;
-  post<T>(url: string, data: unknown): Observable<T>;
-  put<T>(url: string, data: unknown): Observable<T>;
-}
-
-export type BaseEntity<TKey> = {
-  readonly id: TKey;
-}
-
-export type Entities<T extends BaseEntity<T['id']>> = {
-  readonly uid: number;
-
-  _entities: Map<T['id'], number>;
-  _array: Entity<T>[];
-  _indiceNames: Set<Extract<keyof T, string>>;
-  _indices: {
-    [property: string]: Map<any, number[]>
-  };
-
-  loaded: boolean | null;
-}
-
-export type Entity<T> = {
-  readonly uid: number;
-
-  loaded: boolean;
-  value: T;
-}
 
 export const createEntity = <T>(value: T): Entity<T> => {
   return {
@@ -67,7 +42,7 @@ export const createEntities = <T extends BaseEntity<T['id']>>(values: T[] = [], 
   }
 
   for (const index of indices) {
-    entities._indices[index] = new Map<any, number[]>();
+    entities._indices[index] = new Map<unknown, number[]>();
   }
 
   for (let i = 0, length = entities._array.length; i < length; ++i) {
@@ -100,11 +75,6 @@ export const findStoreValueByKey = <TStore, T extends BaseEntity<T['id']>>(
 
     return position === undefined ? null : (root(s)._array[position]?.value || null);
   }
-}
-
-export type ExternalCall<T> = {
-  key: string;
-  observable: Observable<T>;
 }
 
 /**
@@ -147,8 +117,6 @@ export class NgStore<TStore> {
   /****************************************************************** LIFE CYCLE ******************************************************************/
 
   constructor(@Inject(NG_STORE_CONFIG) config: StoreConfiguration) {
-    enableMapSet();
-
     this._config = config;
     this._http = inject(config.httpClientType);
     this._store = new BehaviorSubject(config.initialValue as TStore);
@@ -260,10 +228,17 @@ export class NgStore<TStore> {
     value: any,
     store: TStore = this.value
   ): T | null {
-    const array = selector(store)._indices[index].get(value);
+    const root = selector(store);
+    const indexMap = root._indices[index];
+
+    if (!indexMap) {
+      throw new Error(`Index "${index}" is not defined. Available indices: ${[...root._indiceNames].join(', ') || 'none'}`);
+    }
+
+    const array = indexMap.get(value);
     const position = array && array.length !== 0 ? array[0] : null;
 
-    return position !== null ? selector(store)._array[position].value : null;
+    return position !== null ? root._array[position].value : null;
   }
 
   /**
@@ -310,11 +285,18 @@ export class NgStore<TStore> {
     value: any,
     store: TStore = this.value
   ): T[] | null {
-    const array = selector(store)._indices[index].get(value) || [];
+    const root = selector(store);
+    const indexMap = root._indices[index];
+
+    if (!indexMap) {
+      throw new Error(`Index "${index}" is not defined. Available indices: ${[...root._indiceNames].join(', ') || 'none'}`);
+    }
+
+    const array = indexMap.get(value) || [];
     const result: T[] = [];
 
     for (const position of array) {
-      result.push(selector(store)._array[position].value);
+      result.push(root._array[position].value);
     }
 
     return result;
@@ -419,19 +401,29 @@ export class NgStore<TStore> {
         const snapshotRoot = selector(state);
         const draftRoot = selector(draft);
 
-        for (let i = snapshotRoot._array.length - 1; i >= 0; --i) {
-          if (_isUndefined(snapshotRoot._array[i]) === false && keys.includes(snapshotRoot._array[i].value.id)) {
-            draftRoot._entities.delete(snapshotRoot._array[i].value.id);
+        for (const key of keys) {
+          const position = snapshotRoot._entities.get(key);
 
-            for (const index of snapshotRoot._indiceNames) {
-              const value = snapshotRoot._array[i].value[index];
-              const mapArray = (draftRoot._indices[index].get(value) || []).filter(p => p !== i);
-
-              draftRoot._indices[index].set(value, mapArray);
-            }
-
-            delete draftRoot._array[i];
+          if (position === undefined) {
+            continue;
           }
+
+          const entity = snapshotRoot._array[position];
+
+          if (_isUndefined(entity)) {
+            continue;
+          }
+
+          draftRoot._entities.delete(key);
+
+          for (const index of snapshotRoot._indiceNames) {
+            const value = entity.value[index];
+            const mapArray = (draftRoot._indices[index].get(value) || []).filter(p => p !== position);
+
+            draftRoot._indices[index].set(value, mapArray);
+          }
+
+          delete draftRoot._array[position];
         }
       });
     }
@@ -493,7 +485,17 @@ export class NgStore<TStore> {
     index: Extract<keyof T, string>,
     value: any
   ): Observable<Entity<T>[]> {
-    return this.select(selector).pipe(map(e => (e._indices[index].get(value) || []).map(p => e._array[p])));
+    return this.select(selector).pipe(
+      map(root => {
+        const indexMap = root._indices[index];
+
+        if (!indexMap) {
+          throw new Error(`Index "${index}" is not defined. Available indices: ${[...root._indiceNames].join(', ') || 'none'}`);
+        }
+
+        return (indexMap.get(value) || []).map(p => root._array[p]);
+      })
+    );
   }
 
   /**
@@ -592,7 +594,15 @@ export class NgStore<TStore> {
     return this.select(selector)
       .pipe(
         distinctUntilChanged((prev, curr) => prev._array === curr._array),
-        map(root => (root._indices[index].get(value) || []).map(p => root._array[p].value))
+        map(root => {
+          const indexMap = root._indices[index];
+
+          if (!indexMap) {
+            throw new Error(`Index "${index}" is not defined. Available indices: ${[...root._indiceNames].join(', ') || 'none'}`);
+          }
+
+          return (indexMap.get(value) || []).map(p => root._array[p].value);
+        })
       );
   }
 
@@ -1179,6 +1189,10 @@ export class NgStore<TStore> {
       for (let i = 0, length = entities._array.length; i < length; ++i) {
         const entity = entities._array[i];
 
+        if (_isUndefined(entity)) {
+          continue;
+        }
+
         for (const index of entities._indiceNames) {
           const value = entity.value[index];
           const map = entities._indices[index];
@@ -1192,6 +1206,76 @@ export class NgStore<TStore> {
         }
       }
     });
+  }
+
+  /**
+   * Compact the internal array by removing holes (undefined entries) created by deletions.
+   * This rebuilds _array, _entities and _indices with consecutive positions.
+   *
+   * Note: This operation marks all entities as changed for Immer, which will notify all subscribers.
+   * Use this method when the array has accumulated many holes after deletions.
+   *
+   * @param root Store entities to compact
+   * @returns The number of holes that were removed
+   */
+  public compact<T extends BaseEntity<T['id']>>(
+    root: (s: TStore) => Entities<T>
+  ): number {
+    const entities = root(this.value);
+    const originalLength = entities._array.length;
+    const actualCount = entities._array.filter(e => !_isUndefined(e)).length;
+    const holesCount = originalLength - actualCount;
+
+    if (holesCount === 0) {
+      return 0;
+    }
+
+    this.update((store: TStore) => {
+      const entities = root(store);
+
+      // Rebuild array without holes
+      const compactedArray: Entity<T>[] = [];
+
+      for (let i = 0; i < entities._array.length; ++i) {
+        const entity = entities._array[i];
+
+        if (!_isUndefined(entity)) {
+          compactedArray.push(entity);
+        }
+      }
+
+      entities._array = compactedArray;
+
+      // Rebuild _entities map with new positions
+      entities._entities = new Map<T['id'], number>();
+
+      for (let i = 0; i < entities._array.length; ++i) {
+        entities._entities.set(entities._array[i].value.id, i);
+      }
+
+      // Rebuild indices with new positions
+      for (const index of entities._indiceNames) {
+        entities._indices[index] = new Map<any, number[]>();
+      }
+
+      for (let i = 0; i < entities._array.length; ++i) {
+        const entity = entities._array[i];
+
+        for (const index of entities._indiceNames) {
+          const value = entity.value[index];
+          const map = entities._indices[index];
+
+          if (map.has(value)) {
+            map.get(value)!.push(i);
+          }
+          else {
+            map.set(value, [i]);
+          }
+        }
+      }
+    });
+
+    return holesCount;
   }
 
   /********************************************************************** PRIVATE **********************************************************************/
@@ -1225,6 +1309,10 @@ export class NgStore<TStore> {
         }
 
         updater(entity);
+
+        if (entity.value.id !== key) {
+          throw new Error(`Changing entity id is not allowed. Original id: ${key}, new id: ${entity.value.id}. Use removeEntitiesByKeys() and upsertValue() instead.`);
+        }
 
         for (const index of snapshotRoot._indiceNames) {
           const value = entity.value[index];

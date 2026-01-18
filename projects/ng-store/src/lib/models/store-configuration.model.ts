@@ -1,7 +1,7 @@
 import { ProviderToken, Type } from "@angular/core";
-import { IHttpClient } from "../services";
 import { IBaseErrorComponent } from "./base-error-component.interface";
 import { IBaseLoaderComponent } from "./base-loader-component.interface";
+import { IHttpClient } from "./types.model";
 
 export type StoreConfiguration = {
   httpClientType: ProviderToken<IHttpClient>;
