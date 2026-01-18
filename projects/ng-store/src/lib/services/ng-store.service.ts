@@ -105,6 +105,8 @@ export class NgStore<TStore> {
   private _store: BehaviorSubject<TStore>;
   private _http: IHttpClient;
   private _root: Observable<TStore>;
+  private _isBatching: boolean = false;
+  private _batchedState: TStore | null = null;
 
   public readonly executedQueries$: Observable<Set<string>> = this._executedQueriesSubject.asObservable();
 
@@ -112,7 +114,7 @@ export class NgStore<TStore> {
 
   public get httpClient(): IHttpClient { return this._http; }
   public get root(): Observable<TStore> { return this._root; }
-  public get value(): TStore { return this._store.value; }
+  public get value(): TStore { return this._isBatching && this._batchedState !== null ? this._batchedState : this._store.value; }
 
   /****************************************************************** LIFE CYCLE ******************************************************************/
 
@@ -124,6 +126,45 @@ export class NgStore<TStore> {
   }
 
   /********************************************************************** PUBLIC **********************************************************************/
+
+  /**
+   * Execute multiple store operations as a single atomic update.
+   * Subscribers are notified only once at the end of the batch.
+   *
+   * @param operations Function containing the store operations to batch
+   *
+   * @example
+   * ```typescript
+   * store.batch(() => {
+   *   store.upsertValue(s => s.books, book1);
+   *   store.upsertValue(s => s.books, book2);
+   *   store.removeEntitiesByKeys(s => s.authors, oldAuthorId);
+   * });
+   * // Subscribers notified only once with all changes
+   * ```
+   */
+  public batch(operations: () => void): void {
+    if (this._isBatching) {
+      operations();
+      return;
+    }
+
+    this._isBatching = true;
+    this._batchedState = this._store.value;
+
+    try {
+      operations();
+    } finally {
+      const finalState = this._batchedState;
+
+      this._isBatching = false;
+      this._batchedState = null;
+
+      if (finalState !== null && finalState !== this._store.value) {
+        this._store.next(finalState);
+      }
+    }
+  }
 
   /**
    * Clear the whole store or just a section
@@ -681,10 +722,16 @@ export class NgStore<TStore> {
    * @param updater Function used to update the store
    */
   public update(updater: (draft: TStore, original: TStore) => void) {
-    // DO NOT REMOVE THE BRACKETS FOR THE SECOND PARAMETER AS BECAUSE OF CURRYING IT WOULD MEAN SOMETHING ELSE
-    const nextState = produce(this._store.value, draft => { updater(draft as TStore, this._store.value); });
+    const baseState = this.value;
 
-    this._store.next(nextState);
+    // DO NOT REMOVE THE BRACKETS FOR THE SECOND PARAMETER AS BECAUSE OF CURRYING IT WOULD MEAN SOMETHING ELSE
+    const nextState = produce(baseState, draft => { updater(draft as TStore, baseState); });
+
+    if (this._isBatching) {
+      this._batchedState = nextState;
+    } else {
+      this._store.next(nextState);
+    }
   }
 
   /**
