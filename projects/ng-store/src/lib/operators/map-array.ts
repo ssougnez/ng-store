@@ -1,4 +1,4 @@
-import { Observable, OperatorFunction } from 'rxjs';
+import { OperatorFunction, pipe } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 /**
@@ -30,10 +30,7 @@ import { map } from 'rxjs/operators';
  * ```
  */
 export function mapArray<T, TReturn>(mapper: (item: T) => TReturn): OperatorFunction<T[], TReturn[]> {
-    return (source: Observable<T[]>) => {
-        return source
-            .pipe(
-                map(array => array.map(mapper))
-            );
-    }
-};
+    return pipe(
+        map((array: T[]) => array.map(mapper))
+    );
+}
