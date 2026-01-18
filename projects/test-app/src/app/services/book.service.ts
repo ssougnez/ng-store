@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable } from 'rxjs';
 import { findStoreValueByKey, NgStore } from '@areaprog/ng-store';
 import { AppStore } from '../models/store.model';
 import { Author } from '../models/author.model';
@@ -22,11 +22,11 @@ export class BookService {
   public togglePublished(book: Book): Observable<Book> {
     const updatedBook = { ...book, isPublished: !book.isPublished };
 
-    return this._store.putEntityByKey<Book, Book>(
+    return this._store.putEntityByKey(
       `/api/books/${book.id}`,
       s => s.books,
       book.id,
       updatedBook
-    ).pipe(tap(book => this._store.upsertValue(s => s.books, book)));
+    );
   }
 }

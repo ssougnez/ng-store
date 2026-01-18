@@ -145,6 +145,7 @@ export class NgStore<TStore> {
   /****************************************************************** VARIABLES ******************************************************************/
 
   private _addingStates: Map<number, number> = new Map<number, number>();
+  private _config: StoreConfiguration;
   private _deletingStates: Map<number, number> = new Map<number, number>();
   private _loadingStates: Map<number, number> = new Map<number, number>();
   private _updatingStates: Map<number, number> = new Map<number, number>();
@@ -168,6 +169,7 @@ export class NgStore<TStore> {
   constructor(@Inject(NG_STORE_CONFIG) config: StoreConfiguration) {
     enableMapSet();
 
+    this._config = config;
     this._http = inject(config.httpClientType);
     this._store = new BehaviorSubject(config.initialValue as TStore);
     this._root = this._store.asObservable();
@@ -1242,7 +1244,7 @@ export class NgStore<TStore> {
    * @param key               Key of the entity to update
    * @param data              Updated data
    */
-  public putEntityByKey<T extends BaseEntity<T['id']>, TResult = any>(
+  public putEntityByKey<T extends BaseEntity<T['id']>, TResult = T>(
     url: string,
     root: (s: TStore) => Entities<T>,
     key: T['id'] | null,
@@ -1251,6 +1253,7 @@ export class NgStore<TStore> {
     return this._innerFrom(() => {
       const entity = this.findEntityByKey(root, key);
       const state = entity ? entity.loaded : false;
+      const autoInsert = this._config.automaticPutInsertion !== false;
 
       this.update(d => {
         this._setEntitiesStates(d, root, entity === null ? true : null, null, entity !== null ? true : null, null);
@@ -1259,6 +1262,7 @@ export class NgStore<TStore> {
       return this._http
         .put<TResult>(url, data)
         .pipe(
+          tap(result => autoInsert && this.upsertValue(root, result as unknown as T)),
           finalize(() => {
             this.update(d => {
               this._setEntitiesStates(d, root, entity === null ? false : null, null, entity !== null ? false : null, null);

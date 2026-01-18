@@ -11,4 +11,5 @@ export type StoreConfiguration = {
   errorComponent?: Type<IBaseErrorComponent>;
   defaultLoaderText?: () => string;
   defaultExecuteActionErrorHandler?: (err: Error) => void;
+  automaticPutInsertion?: boolean;
 }

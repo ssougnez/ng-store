@@ -40,3 +40,6 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# JSON Server database (recreated from db.template.json)
+db.json
