@@ -10,6 +10,7 @@ import {
   EntityStateOption,
   ExternalCall,
   IHttpClient,
+  LoadableFlags,
   OnlyBoolean,
   StoreConfiguration,
   StoreEntity
@@ -1511,7 +1512,7 @@ export class NgStore<TStore> {
    * ).subscribe();
    * ```
    */
-  public loadEntities<T extends BaseEntity<T['id']>, TDependent extends { [K in keyof OnlyBoolean<TDependent>]?: boolean }, TData extends BaseEntity<TData['id']> = T>(
+  public loadEntities<T extends BaseEntity<T['id']>, TDependent extends LoadableFlags, TData extends BaseEntity<TData['id']> = T>(
     url: string | ExternalCall<(T | TData)[]>,
     root: (s: TStore) => Entities<T>,
     dependentRoot: (s: TStore) => TDependent | null,
@@ -1566,7 +1567,7 @@ export class NgStore<TStore> {
    * @param force - Bypass the loaded check (default: false)
    * @returns Observable of the loaded entity or null
    */
-  public loadEntity<T extends BaseEntity<T['id']>, TDependent extends { [K in keyof OnlyBoolean<TDependent>]?: boolean }, TData extends BaseEntity<TData['id']> = T>(
+  public loadEntity<T extends BaseEntity<T['id']>, TDependent extends LoadableFlags, TData extends BaseEntity<TData['id']> = T>(
     url: string | ExternalCall<(T | TData)>,
     root: (s: TStore) => Entities<T>,
     dependentRoot: (s: TStore) => TDependent,

@@ -12,6 +12,23 @@ export type BooleanProperties<T> = { [K in keyof T]: T[K] extends boolean ? K : 
  */
 export type OnlyBoolean<T> = { [K in BooleanProperties<T>]: boolean | null | undefined };
 
+/**
+ * Type for objects that track loading state via boolean flags.
+ * Used by loadEntities/loadEntity methods for dependent state tracking.
+ *
+ * @example
+ * ```typescript
+ * interface Author {
+ *   id: number;
+ *   name: string;
+ *   booksLoaded?: boolean;  // Tracks if books have been loaded
+ *   articlesLoaded?: boolean;
+ * }
+ * // Author satisfies LoadableFlags
+ * ```
+ */
+export type LoadableFlags = Record<string, boolean | null | undefined>;
+
 /****************************************************************** ENTITY TYPES ******************************************************************/
 
 /**
@@ -92,13 +109,44 @@ export type EntitySelector<TStore, T> = Selector<TStore, Entity<T>>;
 /****************************************************************** HTTP TYPES ******************************************************************/
 
 /**
- * Interface for HTTP client implementations
+ * Interface for HTTP client implementations.
+ * Your HTTP client (e.g., Angular's HttpClient) must implement these methods.
+ *
+ * @example
+ * ```typescript
+ * // Angular's HttpClient already implements this interface
+ * provideStore({
+ *   httpClientType: HttpClient,
+ *   // ...
+ * })
+ * ```
  */
 export interface IHttpClient {
-  delete<T>(url: string): Observable<T>;
-  get<T>(url: string): Observable<T>;
-  post<T>(url: string, data: unknown): Observable<T>;
-  put<T>(url: string, data: unknown): Observable<T>;
+  /**
+   * Performs an HTTP DELETE request.
+   * @template TResponse - Expected response type
+   */
+  delete<TResponse>(url: string): Observable<TResponse>;
+
+  /**
+   * Performs an HTTP GET request.
+   * @template TResponse - Expected response type
+   */
+  get<TResponse>(url: string): Observable<TResponse>;
+
+  /**
+   * Performs an HTTP POST request.
+   * @template TResponse - Expected response type
+   * @template TBody - Request body type (inferred from data parameter)
+   */
+  post<TResponse, TBody = unknown>(url: string, data: TBody): Observable<TResponse>;
+
+  /**
+   * Performs an HTTP PUT request.
+   * @template TResponse - Expected response type
+   * @template TBody - Request body type (inferred from data parameter)
+   */
+  put<TResponse, TBody = unknown>(url: string, data: TBody): Observable<TResponse>;
 }
 
 /**

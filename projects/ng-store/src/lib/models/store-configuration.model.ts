@@ -7,25 +7,35 @@ import { IHttpClient } from "./types.model";
  * Configuration options for the NgStore.
  * Pass this to `provideStore()` in your application's providers.
  *
+ * @template TStore - The type of your store state (optional, defaults to unknown)
+ *
  * @example
  * ```typescript
+ * // store.model.ts
+ * interface AppStore {
+ *   books: Entities<Book>;
+ *   authors: Entities<Author>;
+ *   ui: Entity<UiState>;
+ * }
+ *
  * // app.config.ts
  * export const appConfig: ApplicationConfig = {
  *   providers: [
- *     provideStore({
+ *     provideStore<AppStore>({
  *       httpClientType: HttpClient,
- *       initialValue: initialStoreState,
+ *       initialValue: {
+ *         books: createEntities<Book>(),
+ *         authors: createEntities<Author>(),
+ *         ui: createEntity({ loading: false })
+ *       },
  *       loaderComponent: AppLoaderComponent,
- *       errorComponent: AppErrorComponent,
- *       automaticPut: true,
- *       automaticPost: true,
- *       automaticDelete: true
+ *       errorComponent: AppErrorComponent
  *     })
  *   ]
  * };
  * ```
  */
-export type StoreConfiguration = {
+export type StoreConfiguration<TStore = unknown> = {
   /**
    * The HTTP client type to use for API calls.
    * Must implement the `IHttpClient` interface.
@@ -50,7 +60,7 @@ export type StoreConfiguration = {
    * }
    * ```
    */
-  initialValue: unknown;
+  initialValue: TStore;
 
   /**
    * Component to display while data is loading.

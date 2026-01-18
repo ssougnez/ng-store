@@ -16,15 +16,15 @@ type ContainerContextNext<T> = {
   standalone: true,
   selector: '[ngsTemplate]'
 })
-export class NgStoreTemplateDirective<T> {
+export class NgStoreTemplateDirective<TQuery = unknown, TData = unknown, TConvertedData = TData> {
 
   /****************************************************************** BINDINGS ******************************************************************/
 
-  public ngsTemplate: InputSignal<QueryAction<any, any, T> | undefined> = input<QueryAction<any, any, T>>();
+  public ngsTemplate: InputSignal<QueryAction<TQuery, TData, TConvertedData> | undefined> = input<QueryAction<TQuery, TData, TConvertedData>>();
 
   /****************************************************************** STATIC ******************************************************************/
 
-  static ngTemplateContextGuard<TContext>(directive: NgStoreTemplateDirective<TContext>, context: unknown): context is ContainerContextNext<TContext> {
+  static ngTemplateContextGuard<TQuery, TData, TContext>(directive: NgStoreTemplateDirective<TQuery, TData, TContext>, context: unknown): context is ContainerContextNext<TContext> {
     return true;
   }
 }

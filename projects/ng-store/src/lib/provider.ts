@@ -9,17 +9,25 @@ import { NG_STORE_CONFIG } from "./tokens";
  *
  * Call this function in your application's providers array to configure the store.
  *
+ * @template TStore - The type of your store state (inferred from initialValue)
  * @param config - Configuration options for the store
  * @returns Environment providers for Angular's dependency injection
  *
  * @example
  * ```typescript
+ * // store.model.ts
+ * interface AppStore {
+ *   books: Entities<Book>;
+ *   authors: Entities<Author>;
+ *   ui: Entity<UiState>;
+ * }
+ *
  * // app.config.ts
  * import { provideStore } from '@areaprog/ng-store';
  *
  * export const appConfig: ApplicationConfig = {
  *   providers: [
- *     provideStore({
+ *     provideStore<AppStore>({
  *       httpClientType: HttpClient,
  *       initialValue: {
  *         books: createEntities<Book>([], ['authorId']),
@@ -33,7 +41,7 @@ import { NG_STORE_CONFIG } from "./tokens";
  * };
  * ```
  */
-export const provideStore = (config: StoreConfiguration): EnvironmentProviders => {
+export const provideStore = <TStore = unknown>(config: StoreConfiguration<TStore>): EnvironmentProviders => {
   enableMapSet();
 
   return makeEnvironmentProviders([
