@@ -21,6 +21,19 @@ export { BaseEntity, Entities, Entity, ExternalCall, IHttpClient } from '../mode
 
 let nextUniqueId = 0;
 
+/**
+ * Creates a new Entity wrapper for a value.
+ *
+ * @template T - The type of value to wrap
+ * @param value - The value to wrap in an Entity
+ * @returns A new Entity containing the value with a unique ID and loaded state
+ *
+ * @example
+ * ```typescript
+ * const bookEntity = createEntity({ id: 1, title: 'Angular Guide' });
+ * // { uid: 0, loaded: true, value: { id: 1, title: 'Angular Guide' } }
+ * ```
+ */
 export const createEntity = <T>(value: T): Entity<T> => {
   return {
     uid: nextUniqueId++,
@@ -29,6 +42,23 @@ export const createEntity = <T>(value: T): Entity<T> => {
   }
 }
 
+/**
+ * Creates a new Entities collection with optional initial values and indices.
+ *
+ * @template T - The entity type (must extend BaseEntity)
+ * @param values - Initial values to populate the collection (default: [])
+ * @param indices - Property names to create indices on for O(1) lookups (default: [])
+ * @returns A new Entities collection with internal indexing structures
+ *
+ * @example
+ * ```typescript
+ * // Create an empty collection with an index on 'authorId'
+ * const books = createEntities<Book>([], ['authorId']);
+ *
+ * // Create a pre-populated collection
+ * const books = createEntities<Book>([book1, book2], ['authorId', 'category']);
+ * ```
+ */
 export const createEntities = <T extends BaseEntity<T['id']>>(values: T[] = [], indices: (Extract<keyof T, string>)[] = []): Entities<T> => {
   const entities: Entities<T> = {
     uid: nextUniqueId++,
@@ -66,6 +96,21 @@ export const createEntities = <T extends BaseEntity<T['id']>>(values: T[] = [], 
   return entities;
 }
 
+/**
+ * Creates a selector function that retrieves a value by its key from an Entities collection.
+ *
+ * @template TStore - The store type
+ * @template T - The entity type (must extend BaseEntity)
+ * @param root - Selector to locate the Entities collection in the store
+ * @param key - The entity key to search for
+ * @returns A selector function that returns the value or null if not found
+ *
+ * @example
+ * ```typescript
+ * const getBook = findStoreValueByKey(s => s.books, 123);
+ * const book = getBook(store.value); // Book | null
+ * ```
+ */
 export const findStoreValueByKey = <TStore, T extends BaseEntity<T['id']>>(
   root: (s: TStore) => Entities<T>,
   key: T['id']
@@ -78,19 +123,52 @@ export const findStoreValueByKey = <TStore, T extends BaseEntity<T['id']>>(
 }
 
 /**
- * Checks if a value is undefined. Used for sparse array handling.
+ * Checks if a value is undefined. Used internally for sparse array handling.
  *
- * Design Note: The store intentionally uses sparse arrays (with undefined holes)
- * when deleting entities. This is an Immer optimization - using `delete array[i]`
- * only marks specific deleted items as changed, whereas array compaction (filter/rebuild)
- * would mark ALL entities as changed due to position updates in _entities and _indices Maps.
+ * The store uses sparse arrays (with undefined holes) when deleting entities.
+ * This is an Immer optimization - using `delete array[i]` only marks specific
+ * deleted items as changed, whereas array compaction would mark ALL entities
+ * as changed due to position updates in _entities and _indices Maps.
  *
- * Tradeoff: Sparse arrays grow over time but avoid unnecessary change notifications.
+ * @internal
  */
 function _isUndefined(value: any): boolean {
   return typeof value === 'undefined';
 }
 
+/**
+ * Angular service providing reactive state management with Immer for immutable updates.
+ *
+ * NgStore manages collections of entities with built-in support for:
+ * - O(1) entity lookups via internal indexing
+ * - Loading states management
+ * - HTTP operations (GET, POST, PUT, DELETE)
+ * - Reactive selectors with RxJS
+ * - Batch updates for atomic operations
+ *
+ * @template TStore - The type of the store state
+ *
+ * @example
+ * ```typescript
+ * // Define your store state
+ * interface AppStore {
+ *   books: Entities<Book>;
+ *   authors: Entities<Author>;
+ *   ui: Entity<UiState>;
+ * }
+ *
+ * // Inject and use the store
+ * export class BookService {
+ *   private store = inject(NgStore<AppStore>);
+ *
+ *   readonly books$ = this.store.selectValues(s => s.books);
+ *
+ *   loadBooks() {
+ *     return this.store.loadAllEntities('/api/books', s => s.books);
+ *   }
+ * }
+ * ```
+ */
 @Injectable({
   providedIn: 'root'
 })
@@ -108,12 +186,18 @@ export class NgStore<TStore> {
   private _isBatching: boolean = false;
   private _batchedState: TStore | null = null;
 
+  /** Observable emitting the set of executed query URLs. Useful for tracking which data has been loaded. */
   public readonly executedQueries$: Observable<Set<string>> = this._executedQueriesSubject.asObservable();
 
   /********************************************************************** ACCESSORS **********************************************************************/
 
+  /** The configured HTTP client instance. */
   public get httpClient(): IHttpClient { return this._http; }
+
+  /** Observable of the entire store state. Emits on every state change. */
   public get root(): Observable<TStore> { return this._root; }
+
+  /** Current snapshot of the store state. During a batch, returns the batched state. */
   public get value(): TStore { return this._isBatching && this._batchedState !== null ? this._batchedState : this._store.value; }
 
   /****************************************************************** LIFE CYCLE ******************************************************************/
@@ -128,19 +212,30 @@ export class NgStore<TStore> {
   /********************************************************************** PUBLIC **********************************************************************/
 
   /**
-   * Execute multiple store operations as a single atomic update.
-   * Subscribers are notified only once at the end of the batch.
+   * Executes multiple store operations as a single atomic update.
+   * Subscribers are notified only once at the end of the batch, improving performance
+   * when making multiple changes.
    *
-   * @param operations Function containing the store operations to batch
+   * @param operations - Function containing the store operations to batch
+   *
+   * @remarks
+   * - Nested batches are supported (inner batch executes normally within outer batch)
+   * - If an exception occurs, changes are not committed (implicit rollback)
+   * - No notification is sent if no changes were made
    *
    * @example
    * ```typescript
+   * // Without batch: 3 notifications
+   * store.upsertValue(s => s.books, book1);
+   * store.upsertValue(s => s.books, book2);
+   * store.removeEntitiesByKeys(s => s.authors, oldAuthorId);
+   *
+   * // With batch: 1 notification
    * store.batch(() => {
    *   store.upsertValue(s => s.books, book1);
    *   store.upsertValue(s => s.books, book2);
    *   store.removeEntitiesByKeys(s => s.authors, oldAuthorId);
    * });
-   * // Subscribers notified only once with all changes
    * ```
    */
   public batch(operations: () => void): void {
@@ -167,20 +262,33 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Clear the whole store or just a section
+   * Removes all entities from a collection.
    *
-   * @param selector  Selector to returns the part of the store to clear
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection to clear
+   *
+   * @example
+   * ```typescript
+   * store.clear(s => s.books);
+   * ```
    */
   public clear<T extends BaseEntity<T['id']>>(selector: (s: TStore) => Entities<T>) {
     this.removeValuesBy(selector, () => true);
   }
 
   /**
-   * Returns the first entity based on a predicate
+   * Finds the first entity matching a predicate (synchronous).
    *
-   * @param selector  Selector to returns the part of the store to filter
-   * @param predicate Predicate to select the entity
-   * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param predicate - Function to test each entity
+   * @param store - Optional store snapshot to search in (defaults to current state)
+   * @returns The first matching Entity or null if not found
+   *
+   * @example
+   * ```typescript
+   * const entity = store.findEntityBy(s => s.books, e => e.value.rating > 4);
+   * ```
    */
   public findEntityBy<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -191,11 +299,21 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns the first entity with a specific key
+   * Finds an entity by its key (synchronous). O(1) lookup using internal index.
    *
-   * @param selector  Selector to returns the part of the store to filter
-   * @param key       Key used for the entity selection
-   * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param key - The entity key to search for
+   * @param store - Optional store snapshot to search in (defaults to current state)
+   * @returns The Entity or null if not found
+   *
+   * @example
+   * ```typescript
+   * const bookEntity = store.findEntityByKey(s => s.books, 123);
+   * if (bookEntity) {
+   *   console.log(bookEntity.value.title, bookEntity.loaded);
+   * }
+   * ```
    */
   public findEntityByKey<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -209,11 +327,17 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns the first entity with a unique id
+   * Finds an entity by its internal unique ID (synchronous).
    *
-   * @param selector  Selector to returns the part of the store to filter
-   * @param uid       Unique ID used for the entity selection
-   * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param uid - The internal unique ID assigned by the store
+   * @param store - Optional store snapshot to search in (defaults to current state)
+   * @returns The Entity or null if not found
+   *
+   * @remarks
+   * The uid is an internal identifier different from the entity's `id` property.
+   * It remains constant even if the entity is updated.
    */
   public findEntityByUniqueId<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -226,12 +350,19 @@ export class NgStore<TStore> {
   }
 
   /**
-  * Returns all entities matching a predicate
-  *
-  * @param selector   Selector to returns the part of the store to filter
-  * @param predicate  Predicate to select the the entities
-   * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
-  */
+   * Finds all entities matching a predicate (synchronous).
+   *
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param predicate - Function to test each entity
+   * @param store - Optional store snapshot to search in (defaults to current state)
+   * @returns Array of matching entities (may be empty)
+   *
+   * @example
+   * ```typescript
+   * const loadedEntities = store.findEntitiesBy(s => s.books, e => e.loaded);
+   * ```
+   */
   public findEntitiesBy<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
     predicate: (item: Entity<T>) => boolean,
@@ -241,11 +372,18 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns the first value based on a predicate
+   * Finds the first value matching a predicate (synchronous).
    *
-   * @param selector  Selector to returns the part of the store to filter
-   * @param predicate Predicate to select the value
-   * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param predicate - Function to test each value
+   * @param store - Optional store snapshot to search in (defaults to current state)
+   * @returns The first matching value or null if not found
+   *
+   * @example
+   * ```typescript
+   * const book = store.findValueBy(s => s.books, b => b.title.includes('Angular'));
+   * ```
    */
   public findValueBy<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -256,12 +394,21 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns the first value based on an index
+   * Finds the first value by an indexed property (synchronous). O(1) lookup.
    *
-   * @param selector  Selector to returns the part of the store to filter
-   * @param index     Index name
-   * @param value     Index value
-   * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param index - Name of the indexed property
+   * @param value - Value to search for in the index
+   * @param store - Optional store snapshot to search in (defaults to current state)
+   * @returns The first matching value or null if not found
+   * @throws Error if the specified index does not exist
+   *
+   * @example
+   * ```typescript
+   * // Assuming 'authorId' is an indexed property
+   * const book = store.findValueByIndex(s => s.books, 'authorId', 42);
+   * ```
    */
   public findValueByIndex<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -283,11 +430,18 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns the first value with a specific key
+   * Finds a value by its key (synchronous). O(1) lookup using internal index.
    *
-   * @param selector  Selector to returns the part of the store to filter
-   * @param key       Key used for the entity selection
-   * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param key - The entity key to search for
+   * @param store - Optional store snapshot to search in (defaults to current state)
+   * @returns The value or null if not found
+   *
+   * @example
+   * ```typescript
+   * const book = store.findValueByKey(s => s.books, 123);
+   * ```
    */
   public findValueByKey<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -298,11 +452,18 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns all values matching a predicate
+   * Finds all values matching a predicate (synchronous).
    *
-   * @param selector  Selector to returns the part of the store to filter
-   * @param predicate Predicate to select the the values
-   * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param predicate - Function to test each value
+   * @param store - Optional store snapshot to search in (defaults to current state)
+   * @returns Array of matching values (may be empty)
+   *
+   * @example
+   * ```typescript
+   * const expensiveBooks = store.findValuesBy(s => s.books, b => b.price > 50);
+   * ```
    */
   public findValuesBy<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -313,12 +474,21 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns values based on an index
+   * Finds all values by an indexed property (synchronous). O(1) lookup.
    *
-   * @param selector  Selector to returns the part of the store to filter
-   * @param index     Index name
-   * @param value     Index value
-   * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param index - Name of the indexed property
+   * @param value - Value to search for in the index
+   * @param store - Optional store snapshot to search in (defaults to current state)
+   * @returns Array of matching values (may be empty)
+   * @throws Error if the specified index does not exist
+   *
+   * @example
+   * ```typescript
+   * // Get all books by author ID (assuming 'authorId' is indexed)
+   * const authorBooks = store.findValuesByIndex(s => s.books, 'authorId', 42);
+   * ```
    */
   public findValuesByIndex<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -344,10 +514,17 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns all the entities of a store location
+   * Gets all entities from a collection (synchronous).
    *
-   * @param selector  Function used to locate the entities in the store
-   * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param store - Optional store snapshot to read from (defaults to current state)
+   * @returns Array of all entities in the collection
+   *
+   * @example
+   * ```typescript
+   * const allBookEntities = store.getEntities(s => s.books);
+   * ```
    */
   public getEntities<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -357,10 +534,17 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns all the values of a store location
+   * Gets all values from a collection (synchronous).
    *
-   * @param selector  Function used to locate the values in the store
-   * @param store     By default the search is performed on the store, but you can pass another version of the store in this parameter
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param store - Optional store snapshot to read from (defaults to current state)
+   * @returns Array of all values in the collection
+   *
+   * @example
+   * ```typescript
+   * const allBooks = store.getValues(s => s.books);
+   * ```
    */
   public getValues<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -370,10 +554,19 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns whether a specific entity exists in the store
+   * Checks if an entity with the given key exists in the collection.
    *
-   * @param selector  Location in the store to get the entity from
-   * @param key   Key of the entity
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param key - The entity key to check
+   * @returns True if the entity exists, false otherwise
+   *
+   * @example
+   * ```typescript
+   * if (store.hasEntity(s => s.books, bookId)) {
+   *   // Book exists
+   * }
+   * ```
    */
   public hasEntity<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -383,11 +576,13 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns an observable emitting a value when the entities are loaded then completes
+   * Returns an observable that emits `true` when the collection is loaded, then completes.
    *
-   * @param selector Entity to watch
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @returns Observable that emits true when loaded
    *
-   * @deprecated This method will disappear in the v3
+   * @deprecated This method will be removed in v3. Use `select(s => s.collection.loaded)` instead.
    */
   public isLoaded<T extends BaseEntity<T['id']>>(selector: (s: TStore) => Entities<T>): Observable<boolean> {
     return this.select(selector)
@@ -400,19 +595,36 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns an observable emitting a value when a specific query has been correctly executed
+   * Returns an observable that emits whether a specific query URL has been executed.
    *
-   * @param query   Query URL
+   * @param query - The query URL to check
+   * @returns Observable emitting true if the query has been executed
+   *
+   * @example
+   * ```typescript
+   * store.isQueryExecuted('/api/books').subscribe(executed => {
+   *   if (executed) {
+   *     console.log('Books have been loaded');
+   *   }
+   * });
+   * ```
    */
   public isQueryExecuted(query: string): Observable<boolean> {
     return this.executedQueries$.pipe(map(queries => queries.has(query)), distinctUntilChanged());
   }
 
   /**
-   * Remove values from the store that match a predicate
+   * Removes all values matching a predicate from the collection.
    *
-   * @param selector  Selector to return the part of the store where values are removed from
-   * @param predicate Predicate to match the value
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param predicate - Function to determine which values to remove
+   *
+   * @example
+   * ```typescript
+   * // Remove all books with rating below 3
+   * store.removeValuesBy(s => s.books, b => b.rating < 3);
+   * ```
    */
   public removeValuesBy<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -424,10 +636,20 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Remove entities from the store by their keys
+   * Removes entities from the collection by their keys.
    *
-   * @param selector  Selector to return the part of the store where entities are removed from
-   * @param keys      Keys used to remove entities
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param keys - Keys of entities to remove
+   *
+   * @remarks
+   * This operation creates sparse array holes for Immer optimization.
+   * Use `compact()` periodically if many deletions accumulate.
+   *
+   * @example
+   * ```typescript
+   * store.removeEntitiesByKeys(s => s.books, 1, 2, 3);
+   * ```
    */
   public removeEntitiesByKeys<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -471,9 +693,20 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns an observable matching a part of the store
+   * Creates a reactive selector for a part of the store.
    *
-   * @param selector Selector to select the part of the store
+   * @template T - The selected type
+   * @param selector - Function to select a part of the store
+   * @returns Observable emitting the selected value, with distinct emissions only
+   *
+   * @example
+   * ```typescript
+   * // Select a primitive value
+   * const bookCount$ = store.select(s => s.books._array.length);
+   *
+   * // Select a nested object
+   * const uiState$ = store.select(s => s.ui.value);
+   * ```
    */
   public select<T>(selector: (s: TStore) => T): Observable<T> {
     return this.root
@@ -484,9 +717,18 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns an observable with all the entities in a part of the store
+   * Returns an observable of all entities in a collection.
    *
-   * @param selector  Selector to fetch the entities
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @returns Observable emitting array of entities
+   *
+   * @example
+   * ```typescript
+   * store.selectEntities(s => s.books).subscribe(entities => {
+   *   entities.forEach(e => console.log(e.value.title, e.loaded));
+   * });
+   * ```
    */
   public selectEntities<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>
@@ -498,10 +740,20 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns an observable filtering the store entities based on a selector
+   * Returns an observable of entities matching a predicate.
    *
-   * @param selector  Selector to fetch the entities
-   * @param filter    Function to filter the entities
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param filter - Function to filter entities
+   * @returns Observable emitting array of matching entities
+   *
+   * @example
+   * ```typescript
+   * // Get only loaded entities
+   * store.selectEntitiesBy(s => s.books, e => e.loaded).subscribe(loadedEntities => {
+   *   // ...
+   * });
+   * ```
    */
   public selectEntitiesBy<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -515,11 +767,22 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns an observable filtering the store entities based on a predefined index
+   * Returns an observable of entities by an indexed property. O(1) lookup.
    *
-   * @param selector  Selector to fetch the entities
-   * @param index     Name of the property used to create the index
-   * @param value     Index value
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param index - Name of the indexed property
+   * @param value - Value to search for in the index
+   * @returns Observable emitting array of matching entities
+   * @throws Error if the specified index does not exist
+   *
+   * @example
+   * ```typescript
+   * // Get all book entities by author (assuming 'authorId' is indexed)
+   * store.selectEntitiesByIndex(s => s.books, 'authorId', 42).subscribe(entities => {
+   *   // ...
+   * });
+   * ```
    */
   public selectEntitiesByIndex<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -540,10 +803,19 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns an observable with the first entity matching a predicate
+   * Returns an observable of the first entity matching a predicate.
    *
-   * @param selector  Selector to select the part of the store
-   * @param predicate Predicate to find the entity
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param predicate - Function to find the entity
+   * @returns Observable emitting the first matching entity or null
+   *
+   * @example
+   * ```typescript
+   * store.selectEntityBy(s => s.books, e => e.value.featured).subscribe(featured => {
+   *   // ...
+   * });
+   * ```
    */
   public selectEntityBy<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -557,11 +829,14 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns an observable filtering the store entities based on a predefined index. If multiple item correspond to the index, the first one is returned
+   * Returns an observable of the first entity by an indexed property. O(1) lookup.
    *
-   * @param selector  Selector to fetch the entities
-   * @param index     Name of the property used to create the index
-   * @param value     Index value
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param index - Name of the indexed property
+   * @param value - Value to search for in the index
+   * @returns Observable emitting the first matching entity or null
+   * @throws Error if the specified index does not exist
    */
   public selectEntityByIndex<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -575,10 +850,21 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns an observable with the first entity with the specified key
+   * Returns an observable of an entity by its key. O(1) lookup.
    *
-   * @param selector  Selector to select the part of the store
-   * @param key       Key used to find the entity
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param key - The entity key to find
+   * @returns Observable emitting the entity or null if not found
+   *
+   * @example
+   * ```typescript
+   * store.selectEntityByKey(s => s.books, 123).subscribe(entity => {
+   *   if (entity) {
+   *     console.log(entity.value.title, entity.loaded);
+   *   }
+   * });
+   * ```
    */
   public selectEntityByKey<T extends BaseEntity<T['id']>>(selector: (s: TStore) => Entities<T>, key: T['id']): Observable<Entity<T> | null> {
     return this.select(selector)
@@ -593,9 +879,18 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns an observable with the values of entities
+   * Returns an observable of all values in a collection.
    *
-   * @param selector Selector to select the part of the store containing the entities
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @returns Observable emitting array of values
+   *
+   * @example
+   * ```typescript
+   * store.selectValues(s => s.books).subscribe(books => {
+   *   books.forEach(book => console.log(book.title));
+   * });
+   * ```
    */
   public selectValues<T extends BaseEntity<T['id']>>(selector: (s: TStore) => Entities<T>): Observable<T[]> {
     return this.select(selector)
@@ -608,10 +903,19 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns an observable filtering the store entities values based on a selector
+   * Returns an observable of values matching a predicate.
    *
-   * @param selector  Selector to fetch the values
-   * @param filter    Function to filter the values
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param filter - Function to filter values
+   * @returns Observable emitting array of matching values
+   *
+   * @example
+   * ```typescript
+   * store.selectValuesBy(s => s.books, b => b.published).subscribe(publishedBooks => {
+   *   // ...
+   * });
+   * ```
    */
   public selectValuesBy<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -621,11 +925,22 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns an observable filtering the store entities based on a predefined index
+   * Returns an observable of values by an indexed property. O(1) lookup.
    *
-   * @param selector  Selector to fetch the entities
-   * @param index     Name of the property used to create the index
-   * @param value     Index value
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param index - Name of the indexed property
+   * @param value - Value to search for in the index
+   * @returns Observable emitting array of matching values
+   * @throws Error if the specified index does not exist
+   *
+   * @example
+   * ```typescript
+   * // Get all books by category (assuming 'category' is indexed)
+   * store.selectValuesByIndex(s => s.books, 'category', 'fiction').subscribe(books => {
+   *   // ...
+   * });
+   * ```
    */
   public selectValuesByIndex<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -648,11 +963,14 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns an observable filtering the store entities based on a predefined index. If multiple value are stored at the specified index, only the first one is returned.
+   * Returns an observable of the first value by an indexed property. O(1) lookup.
    *
-   * @param selector  Selector to fetch the entities
-   * @param index     Name of the property used to create the index
-   * @param value     Index value
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param index - Name of the indexed property
+   * @param value - Value to search for in the index
+   * @returns Observable emitting the first matching value or null
+   * @throws Error if the specified index does not exist
    */
   public selectValueByIndex<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -666,9 +984,18 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns an observable with the value of an entity
+   * Returns an observable of a single Entity's value.
    *
-   * @param selector Selector to select the entity
+   * @template T - The value type
+   * @param selector - Selector to locate the Entity
+   * @returns Observable emitting the value
+   *
+   * @example
+   * ```typescript
+   * store.selectValue(s => s.currentUser).subscribe(user => {
+   *   console.log(user.name);
+   * });
+   * ```
    */
   public selectValue<T>(selector: (s: TStore) => Entity<T>): Observable<T> {
     return this.select(selector)
@@ -679,10 +1006,19 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns an observable with the first value matching a predicate
+   * Returns an observable of the first value matching a predicate.
    *
-   * @param selector  Selector to select the part of the store containing the entities
-   * @param predicate Predicate used to find the value
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param predicate - Function to find the value
+   * @returns Observable emitting the first matching value or null
+   *
+   * @example
+   * ```typescript
+   * store.selectValueBy(s => s.books, b => b.featured).subscribe(featured => {
+   *   // ...
+   * });
+   * ```
    */
   public selectValueBy<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -696,10 +1032,21 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Returns an observable with a value with the specified key
+   * Returns an observable of a value by its key. O(1) lookup.
    *
-   * @param selector  Selector to select the part of the store containing the entities
-   * @param key       Key used to find the value
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param key - The entity key to find
+   * @returns Observable emitting the value or null if not found
+   *
+   * @example
+   * ```typescript
+   * store.selectValueByKey(s => s.books, 123).subscribe(book => {
+   *   if (book) {
+   *     console.log(book.title);
+   *   }
+   * });
+   * ```
    */
   public selectValueByKey<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -717,9 +1064,22 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Update the store
+   * Updates the store state using Immer's produce function.
    *
-   * @param updater Function used to update the store
+   * @param updater - Function that mutates the draft state
+   *
+   * @remarks
+   * The updater receives two parameters:
+   * - `draft`: Mutable draft of the state (mutate this directly)
+   * - `original`: Read-only original state (for reference)
+   *
+   * @example
+   * ```typescript
+   * store.update((draft, original) => {
+   *   draft.ui.value.loading = true;
+   *   draft.ui.value.lastUpdated = new Date();
+   * });
+   * ```
    */
   public update(updater: (draft: TStore, original: TStore) => void) {
     const baseState = this.value;
@@ -735,12 +1095,23 @@ export class NgStore<TStore> {
   }
 
   /**
-  * Update entities based on a predicate
-  *
-  * @param root      Selector used to fetch the entities containing the value to update
-  * @param selector  Selector used to filter entities
-  * @param updater   Function used to update entities
-  */
+   * Updates all entities matching a predicate.
+   *
+   * @template T - The entity type
+   * @param root - Selector to locate the Entities collection
+   * @param selector - Predicate to select entities to update
+   * @param updater - Function to update each matching entity
+   *
+   * @example
+   * ```typescript
+   * // Mark all unloaded entities as loading
+   * store.updateEntitiesBy(
+   *   s => s.books,
+   *   e => !e.loaded,
+   *   e => { e.loaded = true; }
+   * );
+   * ```
+   */
   public updateEntitiesBy<T extends BaseEntity<T['id']>>(
     root: (s: TStore) => Entities<T>,
     selector: (item: Entity<T>) => boolean,
@@ -757,11 +1128,23 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Update an entity by key
+   * Updates an entity by its key.
    *
-   * @param selector  Selector used to fetch the entities containing the entity to update
-   * @param key       Key used to fetch the entity to update
-   * @param updater   Function used to update the entity
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param key - Key of the entity to update
+   * @param updater - Function to update the entity
+   *
+   * @remarks
+   * The entity's `id` property cannot be changed. Attempting to do so will throw an error.
+   *
+   * @example
+   * ```typescript
+   * store.updateEntityByKey(s => s.books, 123, entity => {
+   *   entity.loaded = true;
+   *   entity.value.title = 'New Title';
+   * });
+   * ```
    */
   public updateEntityByKey<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -772,11 +1155,23 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Update a value by key
+   * Updates a value by its key.
    *
-   * @param selector  Selector used to fetch the entities containing the value to update
-   * @param key       Key used to fetch the value to update
-   * @param updater   Function used to update the entity
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param key - Key of the value to update
+   * @param updater - Function to update the value
+   *
+   * @remarks
+   * The value's `id` property cannot be changed. Attempting to do so will throw an error.
+   *
+   * @example
+   * ```typescript
+   * store.updateValueByKey(s => s.books, 123, book => {
+   *   book.title = 'Updated Title';
+   *   book.price = 29.99;
+   * });
+   * ```
    */
   public updateValueByKey<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -787,11 +1182,22 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Update values based on a predicate
+   * Updates all values matching a predicate.
    *
-   * @param root      Selector used to fetch the entities containing the value to update
-   * @param selector  Selector used to filter entities
-   * @param updater   Function used to update entities
+   * @template T - The entity type
+   * @param root - Selector to locate the Entities collection
+   * @param selector - Predicate to select values to update
+   * @param updater - Function to update each matching value
+   *
+   * @example
+   * ```typescript
+   * // Apply 10% discount to all expensive books
+   * store.updateValuesBy(
+   *   s => s.books,
+   *   b => b.price > 50,
+   *   b => { b.price *= 0.9; }
+   * );
+   * ```
    */
   public updateValuesBy<T extends BaseEntity<T['id']>>(
     root: (s: TStore) => Entities<T>,
@@ -802,12 +1208,21 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Upsert multiple values in the store. If the value already exists in the store, entities are merged.
+   * Inserts or updates multiple values in the collection.
+   * If a value already exists (by id), it is merged with the new value.
    *
-   * @param selector          Selector defining where the values are added
-   * @param values            Values to add
-   * @param state             By default, entities are set as "loaded: true if the value is not null". Can be overriden using this parameter.
-   * @param state.loaded      Defines whether the entity is currently loaded. Could be used for partially loaded entities.
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param values - Values to upsert
+   * @param state - Optional entity state options
+   *
+   * @example
+   * ```typescript
+   * store.upsertValues(s => s.books, [book1, book2, book3]);
+   *
+   * // With partial loading state
+   * store.upsertValues(s => s.books, partialBooks, { loaded: false });
+   * ```
    */
   public upsertValues<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -818,12 +1233,21 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Upsert a value in the store. If the value already exists in the store, entities are merged.
+   * Inserts or updates a single value in the collection.
+   * If the value already exists (by id), it is merged with the new value.
    *
-   * @param selector          Selector defining where the value is added
-   * @param value             Value to add
-   * @param state             By default, the entity is set as "loaded: true if the value is not null". Can be overriden using this parameter.
-   * @param state.loaded      Defines whether the entity is currently loaded. Could be used for partially loaded entities.
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param value - Value to upsert
+   * @param state - Optional entity state options
+   *
+   * @example
+   * ```typescript
+   * store.upsertValue(s => s.books, newBook);
+   *
+   * // Mark as not fully loaded
+   * store.upsertValue(s => s.books, partialBook, { loaded: false });
+   * ```
    */
   public upsertValue<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
@@ -834,12 +1258,27 @@ export class NgStore<TStore> {
   }
 
   /**
-  * Call a HTTP route to delete an entity by key
-  *
-  * @param url            URL to call
-  * @param root           Store entities containing the entity to delete
-  * @param key            Key to find the entity in the entities
-  */
+   * Deletes an entity via HTTP DELETE and removes it from the store.
+   *
+   * @template T - The entity type
+   * @template TReturn - The HTTP response type (defaults to T)
+   * @param url - URL to call for deletion
+   * @param root - Selector to locate the Entities collection
+   * @param key - Key of the entity to delete
+   * @returns Observable of the HTTP response
+   *
+   * @remarks
+   * The entity is removed from the store only after successful HTTP response.
+   * Set `automaticDelete: false` in config to disable automatic removal.
+   *
+   * @example
+   * ```typescript
+   * store.deleteEntityByKey('/api/books/123', s => s.books, 123).subscribe({
+   *   next: () => console.log('Deleted'),
+   *   error: err => console.error('Failed to delete', err)
+   * });
+   * ```
+   */
   public deleteEntityByKey<T extends BaseEntity<T['id']>, TReturn = T>(
     url: string,
     root: (s: TStore) => Entities<T>,
@@ -862,18 +1301,21 @@ export class NgStore<TStore> {
     });
   }
 
-
-
-
   /**
+   * Loads multiple entities based on dependent entity keys.
+   * Useful for loading related data based on foreign keys.
    *
-   * @param url               URL to call
-   * @param root              Store location where to load the entities
-   * @param dependentRoot     Dependant store location
-   * @param dependentKeys     Keys of depending entites
-   * @param stateProperty     Property determining if the entity has to be loaded
-   * @param entitiesLoaded    Defines whether the entity are fully loaded
-   * @param force     By-pass the loaded check
+   * @template T - The entity type to load
+   * @template TDependent - The dependent entity type
+   * @template TData - The HTTP response data type
+   * @param url - Base URL (ids will be appended as query params)
+   * @param root - Selector for the collection to populate
+   * @param dependentRoot - Selector for the dependent collection
+   * @param dependentKeys - Keys of dependent entities to load data for
+   * @param stateProperty - Boolean property on dependent entity tracking load state
+   * @param entitiesLoaded - Whether loaded entities are considered fully loaded (default: true)
+   * @param force - Bypass the loaded check (default: false)
+   * @returns Observable of loaded entities
    */
   public loadBatchEntities<T extends BaseEntity<T['id']>, TDependent extends BaseEntity<TDependent['id']>, TData extends BaseEntity<TData['id']> = T>(
     url: string,
@@ -939,12 +1381,27 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Load all the entities
+   * Loads all entities from an HTTP endpoint into the collection.
    *
-   * @param url               URL to call
-   * @param root              Store location to place the loaded entities
-   * @param entitiesLoaded    Defines whether the entities are compltely loaded or not
-   * @param force             Ignore the "loaded" state
+   * @template T - The entity type
+   * @template TData - The HTTP response data type
+   * @param url - URL to fetch from, or an ExternalCall configuration
+   * @param root - Selector to locate the Entities collection
+   * @param entitiesLoaded - Whether loaded entities are considered fully loaded (default: true)
+   * @param force - Bypass the loaded check (default: false)
+   * @returns Observable of loaded entities
+   *
+   * @remarks
+   * - Sets `collection.loaded = null` while loading, then `true` on success
+   * - On error, restores previous loaded state
+   * - Skips HTTP call if already loaded (unless `force: true`)
+   *
+   * @example
+   * ```typescript
+   * store.loadAllEntities('/api/books', s => s.books).subscribe(books => {
+   *   console.log(`Loaded ${books.length} books`);
+   * });
+   * ```
    */
   public loadAllEntities<T extends BaseEntity<T['id']>, TData extends BaseEntity<TData['id']> = T>(
     url: string | ExternalCall<(T | TData)[]>,
@@ -980,12 +1437,29 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Load entities once based on a custom condition
+   * Loads entities once based on URL tracking (not collection state).
+   * Unlike loadAllEntities, this tracks by URL rather than collection.loaded.
    *
-   * @param url               URL to call to load the entities
-   * @param root              Selector to get the location of the store where the entities will be loaded
-   * @param entitiesLoaded    Defines whether the retrieved entities are considered as loaded or not
-   * @param force             Used to retrieve the entities no matter what
+   * @template T - The entity type
+   * @template TData - The HTTP response data type
+   * @param url - URL to fetch from
+   * @param root - Selector to locate the Entities collection
+   * @param entitiesLoaded - Whether loaded entities are considered fully loaded (default: true)
+   * @param force - Bypass the URL check (default: false)
+   * @returns Observable of loaded entities
+   *
+   * @remarks
+   * Use this when you want to load data once per URL, regardless of collection state.
+   * The URL is tracked in `executedQueries$`.
+   *
+   * @example
+   * ```typescript
+   * // Load featured books once
+   * store.loadEntitiesOnce('/api/books/featured', s => s.books).subscribe();
+   *
+   * // Check if loaded
+   * store.isQueryExecuted('/api/books/featured').subscribe(loaded => { ... });
+   * ```
    */
   public loadEntitiesOnce<T extends BaseEntity<T['id']>, TData extends BaseEntity<TData['id']> = T>(
     url: string,
@@ -1013,16 +1487,29 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Load entities based on a custom optional condition
+   * Loads entities with state tracking on a dependent object.
    *
-   * @param url               URL to call to load the entities
-   * @param root              Selector to get the location of the store where the entities will be loaded
-   * @param dependentRoot     Selector to retrieve the location where the variable defining whether the entities are loading or not is located
-   * @param stateProperty     Name of the property defining whether the entities are loading or not is located
-   * @param entitiesLoaded    Defines whether the retrieved entities are considered as loaded or not
-   * @param options           Loading options
-   * @param options.force     Used to retrieve the entities no matter what
-   * @param options.mapper    Used to convert the data returned by the server in entity type
+   * @template T - The entity type to load
+   * @template TDependent - The dependent object type containing the state property
+   * @template TData - The HTTP response data type
+   * @param url - URL to fetch from, or an ExternalCall configuration
+   * @param root - Selector for the collection to populate
+   * @param dependentRoot - Selector for the object containing the state property
+   * @param stateProperty - Boolean property name tracking the load state
+   * @param entitiesLoaded - Whether loaded entities are considered fully loaded (default: true)
+   * @param force - Bypass the loaded check (default: false)
+   * @returns Observable of loaded entities
+   *
+   * @example
+   * ```typescript
+   * // Load author's books with state tracked on the author
+   * store.loadEntities(
+   *   `/api/authors/${authorId}/books`,
+   *   s => s.books,
+   *   s => s.authors._array.find(a => a.value.id === authorId)?.value,
+   *   'booksLoaded'
+   * ).subscribe();
+   * ```
    */
   public loadEntities<T extends BaseEntity<T['id']>, TDependent extends { [K in keyof OnlyBoolean<TDependent>]?: boolean }, TData extends BaseEntity<TData['id']> = T>(
     url: string | ExternalCall<(T | TData)[]>,
@@ -1066,14 +1553,18 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Load an entity based on a custom condition
+   * Loads a single entity with state tracking on a dependent object.
    *
-   * @param url               URL to call to load the entity
-   * @param root              Selector to get the location of the store where the entities will be loaded
-   * @param dependentRoot     Selector to retrieve the location where the variable defining whether the entities are loading or not is located
-   * @param stateProperty     Name of the property defining whether the entities are loading or not is located
-   * @param entityLoaded      Defines whether the retrieved entity is considered as loaded or not
-   * @param force             Used to retrieve the entities no matter what
+   * @template T - The entity type to load
+   * @template TDependent - The dependent object type containing the state property
+   * @template TData - The HTTP response data type
+   * @param url - URL to fetch from, or an ExternalCall configuration
+   * @param root - Selector for the collection to populate
+   * @param dependentRoot - Selector for the object containing the state property
+   * @param stateProperty - Boolean property name tracking the load state
+   * @param entityLoaded - Whether the loaded entity is considered fully loaded (default: true)
+   * @param force - Bypass the loaded check (default: false)
+   * @returns Observable of the loaded entity or null
    */
   public loadEntity<T extends BaseEntity<T['id']>, TDependent extends { [K in keyof OnlyBoolean<TDependent>]?: boolean }, TData extends BaseEntity<TData['id']> = T>(
     url: string | ExternalCall<(T | TData)>,
@@ -1110,13 +1601,27 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Loads an entity by some criteria defined by selector. Used to load a partially loaded entity already present in the store or to load a non existing entity in the store.
+   * Loads an entity by a custom predicate.
+   * Useful for loading a partially-loaded entity or fetching by criteria other than id.
    *
-   * @param url               URL called to load the entity
-   * @param root              Location of the store the entity is put
-   * @param selector          Delegates used to find the entity. If multiple entity match the criteria, only the first one will be loaded
-   * @param entityLoaded      Defines whether the retrieved entity is considered as loaded or not
-   * @param force             By default, the entity is loaded only if it does not exist in the store or is not loaded. Use force to load it no matter what.
+   * @template T - The entity type
+   * @template TData - The HTTP response data type
+   * @param url - URL to fetch from, or an ExternalCall configuration
+   * @param root - Selector for the collection to populate
+   * @param selector - Predicate to find the entity (if multiple match, first is used)
+   * @param entityLoaded - Whether the loaded entity is considered fully loaded (default: true)
+   * @param force - Bypass the loaded check (default: false)
+   * @returns Observable of the loaded entity
+   *
+   * @example
+   * ```typescript
+   * // Load book by ISBN
+   * store.loadEntityBy(
+   *   `/api/books/isbn/${isbn}`,
+   *   s => s.books,
+   *   b => b.isbn === isbn
+   * ).subscribe();
+   * ```
    */
   public loadEntityBy<T extends BaseEntity<T['id']>, TData extends BaseEntity<TData['id']> = T>(
     url: string | ExternalCall<(T | TData)>,
@@ -1129,13 +1634,24 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Loads an entity by key. Used to load a partially loaded entity already present in the store or to load a non existing entity in the store.
+   * Loads an entity by its key.
+   * Skips loading if entity exists and is already loaded (unless `force: true`).
    *
-   * @param url               URL called to load the entity
-   * @param root              Location of the store the entity is put
-   * @param key               Key of the entity to load
-   * @param entityLoaded      Defines whether the retrieved entity is considered as loaded or not
-   * @param force             By default, the entity is loaded only if it does not exist in the store or is not loaded. Use force to load it no matter what.
+   * @template T - The entity type
+   * @template TData - The HTTP response data type
+   * @param url - URL to fetch from, or an ExternalCall configuration
+   * @param root - Selector for the collection to populate
+   * @param key - Key of the entity to load
+   * @param entityLoaded - Whether the loaded entity is considered fully loaded (default: true)
+   * @param force - Bypass the loaded check (default: false)
+   * @returns Observable of the loaded entity
+   *
+   * @example
+   * ```typescript
+   * store.loadEntityByKey(`/api/books/${bookId}`, s => s.books, bookId).subscribe(book => {
+   *   console.log('Loaded:', book.title);
+   * });
+   * ```
    */
   public loadEntityByKey<T extends BaseEntity<T['id']>, TData extends BaseEntity<TData['id']> = T>(
     url: string | ExternalCall<(T | TData)>,
@@ -1148,11 +1664,25 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Call a HTTP route to create a new entity
+   * Creates a new entity via HTTP POST and adds it to the store.
    *
-   * @param url               URL to call
-   * @param root              Store location where to put the entity
-   * @param data              Data to post
+   * @template T - The entity type
+   * @template TResult - The HTTP response type (defaults to T)
+   * @param url - URL to POST to
+   * @param root - Selector for the collection to add the entity to
+   * @param data - Data to send in the POST body
+   * @returns Observable of the HTTP response
+   *
+   * @remarks
+   * The response is automatically added to the store (unless `automaticPost: false` in config).
+   *
+   * @example
+   * ```typescript
+   * store.postEntity('/api/books', s => s.books, { title: 'New Book', authorId: 1 })
+   *   .subscribe(createdBook => {
+   *     console.log('Created book with id:', createdBook.id);
+   *   });
+   * ```
    */
   public postEntity<T extends BaseEntity<T['id']>, TResult = T>(
     url: string,
@@ -1171,11 +1701,17 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Call an HTTP route to update all entities
+   * Updates all entities via HTTP PUT.
    *
-   * @param url                 URL to call
-   * @param root                Store entities containing the entities to update
-   * @param data                Updated data
+   * @template T - The entity type
+   * @template TResult - The HTTP response type (defaults to T)
+   * @param url - URL to PUT to
+   * @param root - Selector for the collection to update
+   * @param data - Array of entities to send
+   * @returns Observable of the HTTP response array
+   *
+   * @remarks
+   * Response entities are automatically upserted (unless `automaticPut: false` in config).
    */
   public putAllEntities<T extends BaseEntity<T['id']>, TResult = T>(
     url: string,
@@ -1194,12 +1730,26 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Call a HTTP route to update an existing entity
+   * Updates an entity via HTTP PUT.
    *
-   * @param url               URL to call
-   * @param root              Store entities containing the entity to update
-   * @param key               Key of the entity to update
-   * @param data              Updated data
+   * @template T - The entity type
+   * @template TResult - The HTTP response type (defaults to T)
+   * @param url - URL to PUT to
+   * @param root - Selector for the collection containing the entity
+   * @param key - Key of the entity (for reference, not used in request)
+   * @param data - Data to send in the PUT body
+   * @returns Observable of the HTTP response
+   *
+   * @remarks
+   * The response is automatically upserted (unless `automaticPut: false` in config).
+   *
+   * @example
+   * ```typescript
+   * store.putEntityByKey('/api/books/123', s => s.books, 123, updatedBook)
+   *   .subscribe(result => {
+   *     console.log('Updated:', result.title);
+   *   });
+   * ```
    */
   public putEntityByKey<T extends BaseEntity<T['id']>, TResult = T>(
     url: string,
@@ -1219,9 +1769,14 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Rebuild the indices map of an entity list
+   * Rebuilds all indices for a collection.
+   * Use this if indices become corrupted or after manual array manipulation.
    *
-   * @param root Store entities to rebuild the indices of
+   * @template T - The entity type
+   * @param root - Selector for the collection to rebuild indices for
+   *
+   * @remarks
+   * This is rarely needed during normal usage. The store maintains indices automatically.
    */
   public rebuildIndices<T extends BaseEntity<T['id']>>(
     root: (s: TStore) => Entities<T>
@@ -1256,14 +1811,24 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Compact the internal array by removing holes (undefined entries) created by deletions.
-   * This rebuilds _array, _entities and _indices with consecutive positions.
+   * Compacts the internal array by removing holes created by deletions.
+   * Rebuilds `_array`, `_entities`, and `_indices` with consecutive positions.
    *
-   * Note: This operation marks all entities as changed for Immer, which will notify all subscribers.
-   * Use this method when the array has accumulated many holes after deletions.
-   *
-   * @param root Store entities to compact
+   * @template T - The entity type
+   * @param root - Selector for the collection to compact
    * @returns The number of holes that were removed
+   *
+   * @remarks
+   * - This operation marks all entities as changed, triggering all subscribers
+   * - Use periodically when many deletions have accumulated
+   * - The store uses sparse arrays (holes) for Immer optimization; compact reclaims memory
+   *
+   * @example
+   * ```typescript
+   * // After many deletions
+   * const holesRemoved = store.compact(s => s.books);
+   * console.log(`Removed ${holesRemoved} holes from array`);
+   * ```
    */
   public compact<T extends BaseEntity<T['id']>>(
     root: (s: TStore) => Entities<T>
@@ -1327,12 +1892,12 @@ export class NgStore<TStore> {
 
   /********************************************************************** PRIVATE **********************************************************************/
 
-  /** */
+  /** @internal Sets entity state properties */
   private _setEntityState(root: StoreEntity, state: EntityStateOption) {
     Object.assign(root, state || {});
   }
 
-  /** */
+  /** @internal Updates an entity by key within an Immer draft */
   private _updateEntityByKey<T extends BaseEntity<T['id']>>(
     draft: TStore,
     snapshot: TStore,
@@ -1375,7 +1940,7 @@ export class NgStore<TStore> {
     }
   }
 
-  /** */
+  /** @internal Upserts multiple entities into a collection */
   private _upsertEntities<T extends BaseEntity<T['id']>>(
     root: Entities<T>,
     values: T[],
@@ -1440,7 +2005,7 @@ export class NgStore<TStore> {
     }
   }
 
-  /* */
+  /** @internal Gets or creates a shared HTTP query observable */
   private _getLoadQuery<T>(data: string | ExternalCall<T>): Observable<T> {
     let query = this._executingQueries.get(typeof data == 'string' ? data : data.key);
 
@@ -1453,7 +2018,7 @@ export class NgStore<TStore> {
     return query;
   }
 
-  /* */
+  /** @internal Wraps an observable factory for lazy execution */
   private _innerFrom<T>(inner: () => Observable<T>): Observable<T> {
     return new Observable<T>(observer => {
       const s = inner().subscribe({
@@ -1468,7 +2033,7 @@ export class NgStore<TStore> {
     })
   }
 
-  /** */
+  /** @internal Loads a single entity by key or predicate */
   private _loadEntity<T extends BaseEntity<T['id']>, TData extends BaseEntity<TData['id']> = T>(
     url: string | ExternalCall<(T | TData)>,
     root: (s: TStore) => Entities<T>,
@@ -1501,12 +2066,12 @@ export class NgStore<TStore> {
     });
   }
 
-  /** */
+  /** @internal Removes a query from the executing queries cache */
   private _removeLoadQuery(data: string | ExternalCall<unknown>) {
     this._executingQueries.delete(typeof data == 'string' ? data : data.key);
   }
 
-  /** */
+  /** @internal Sets entity loaded states */
   private _setEntityStates<T extends BaseEntity<T['id']>, TEntity>(
     draft: TStore,
     root: (s: TStore) => (Entities<T> | Entity<TEntity>),
