@@ -14,18 +14,18 @@ import { map } from 'rxjs/operators';
  *
  * @example
  * ```typescript
- * // Transform entities to values
- * store.selectEntities(s => s.books).pipe(
- *   mapArray(entity => entity.value)
- * ).subscribe(books => {
- *   console.log(books);
- * });
- *
- * // Extract specific property
+ * // Extract specific property from values
  * store.selectValues(s => s.books).pipe(
  *   mapArray(book => book.title)
  * ).subscribe(titles => {
  *   console.log(titles);
+ * });
+ *
+ * // Transform to a different structure
+ * store.selectValues(s => s.books).pipe(
+ *   mapArray(book => ({ id: book.id, label: book.title }))
+ * ).subscribe(options => {
+ *   console.log(options);
  * });
  * ```
  */
