@@ -1,4 +1,4 @@
-import { Inject, inject, Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { filterArray, mapArray } from '../operators';
 import { produce } from 'immer';
 import { BehaviorSubject, catchError, distinctUntilChanged, filter, finalize, map, Observable, of, share, take, tap, throwError } from 'rxjs';
@@ -115,9 +115,10 @@ export const findStoreValueByKey = <TStore, T extends BaseEntity<T['id']>>(
   key: T['id']
 ): ((s: TStore) => T | null) => {
   return (s: TStore): T | null => {
-    const position = root(s)._entities.get(key);
+    const entities = root(s);
+    const position = entities._entities.get(key);
 
-    return position === undefined ? null : (root(s)._array[position]?.value || null);
+    return position === undefined ? null : (entities._array[position]?.value ?? null);
   }
 }
 
@@ -175,15 +176,15 @@ export class NgStore<TStore> {
 
   /****************************************************************** VARIABLES ******************************************************************/
 
-  private _config: StoreConfiguration;
-  private _executingQueries: Map<string, Observable<any>> = new Map<string, Observable<any>>();
+  private _batchedState: TStore | null = null;
+  private _config = inject(NG_STORE_CONFIG);
   private _executedQueries: Set<string> = new Set<string>();
   private _executedQueriesSubject: BehaviorSubject<Set<string>> = new BehaviorSubject<Set<string>>(this._executedQueries);
-  private _store: BehaviorSubject<TStore>;
-  private _http: IHttpClient;
-  private _root: Observable<TStore>;
+  private _executingQueries: Map<string, Observable<any>> = new Map<string, Observable<any>>();
+  private _http = inject(this._config.httpClientType);
   private _isBatching: boolean = false;
-  private _batchedState: TStore | null = null;
+  private _root: Observable<TStore>;
+  private _store = new BehaviorSubject(this._config.initialValue as TStore);
 
   /** Observable emitting the set of executed query URLs. Useful for tracking which data has been loaded. */
   public readonly executedQueries$: Observable<Set<string>> = this._executedQueriesSubject.asObservable();
@@ -201,10 +202,7 @@ export class NgStore<TStore> {
 
   /****************************************************************** LIFE CYCLE ******************************************************************/
 
-  constructor(@Inject(NG_STORE_CONFIG) config: StoreConfiguration) {
-    this._config = config;
-    this._http = inject(config.httpClientType);
-    this._store = new BehaviorSubject(config.initialValue as TStore);
+  constructor() {
     this._root = this._store.asObservable();
   }
 
