@@ -29,6 +29,29 @@ export type OnlyBoolean<T> = { [K in BooleanProperties<T>]: boolean | null | und
  */
 export type LoadableFlags = Record<string, boolean | null | undefined>;
 
+/**
+ * Extracts string property names from a type T.
+ * Used to specify which properties can be indexed for O(1) lookups in an Entities collection.
+ *
+ * @template T - The entity type to extract property names from
+ *
+ * @example
+ * ```typescript
+ * interface Book {
+ *   id: number;
+ *   title: string;
+ *   authorId: number;
+ *   category: string;
+ * }
+ *
+ * // IndexOf<Book> = 'id' | 'title' | 'authorId' | 'category'
+ *
+ * // Used with createEntities to define indexed properties
+ * const books = createEntities<Book>([], ['authorId', 'category']);
+ * ```
+ */
+export type IndexOf<T> = Extract<keyof T, string>;
+
 /****************************************************************** ENTITY TYPES ******************************************************************/
 
 /**

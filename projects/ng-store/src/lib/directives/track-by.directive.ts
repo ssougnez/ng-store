@@ -1,6 +1,6 @@
 import { NgForOf } from "@angular/common";
 import { Directive, Input, NgIterable, inject } from "@angular/core";
-import { BaseEntity, Entity } from "../services";
+import { BaseEntity, Entity } from "../models";
 
 /**
  * @deprecated This will be dropped. Use @for (item in list; track item.id) instead

@@ -10,15 +10,13 @@ import {
   EntityStateOption,
   ExternalCall,
   IHttpClient,
+  IndexOf,
   LoadableFlags,
   OnlyBoolean,
   StoreConfiguration,
   StoreEntity
 } from '../models';
 import { NG_STORE_CONFIG } from '../tokens';
-
-// Re-export types for backward compatibility
-export { BaseEntity, Entities, Entity, ExternalCall, IHttpClient } from '../models';
 
 let nextUniqueId = 0;
 
@@ -60,7 +58,7 @@ export const createEntity = <T>(value: T): Entity<T> => {
  * const books = createEntities<Book>([book1, book2], ['authorId', 'category']);
  * ```
  */
-export const createEntities = <T extends BaseEntity<T['id']>>(values: T[] = [], indices: (Extract<keyof T, string>)[] = []): Entities<T> => {
+export const createEntities = <T extends BaseEntity<T['id']>>(values: T[] = [], indices: IndexOf<T>[] = []): Entities<T> => {
   const entities: Entities<T> = {
     uid: nextUniqueId++,
 
