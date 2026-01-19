@@ -238,6 +238,7 @@ export class NgStore<TStore> {
   public batch(operations: () => void): void {
     if (this._isBatching) {
       operations();
+      
       return;
     }
 
@@ -271,101 +272,6 @@ export class NgStore<TStore> {
    */
   public clear<T extends BaseEntity<T['id']>>(selector: (s: TStore) => Entities<T>) {
     this.removeValuesBy(selector, () => true);
-  }
-
-  /**
-   * Finds the first entity matching a predicate (synchronous).
-   *
-   * @template T - The entity type
-   * @param selector - Selector to locate the Entities collection
-   * @param predicate - Function to test each entity
-   * @param store - Optional store snapshot to search in (defaults to current state)
-   * @returns The first matching Entity or null if not found
-   *
-   * @example
-   * ```typescript
-   * const entity = store.findEntityBy(s => s.books, e => e.value.rating > 4);
-   * ```
-   */
-  public findEntityBy<T extends BaseEntity<T['id']>>(
-    selector: (s: TStore) => Entities<T>,
-    predicate: (item: Entity<T>) => boolean,
-    store: TStore = this.value
-  ): Entity<T> | null {
-    return selector(store)._array.find(e => _isUndefined(e) === false && predicate(e)) || null;
-  }
-
-  /**
-   * Finds an entity by its key (synchronous). O(1) lookup using internal index.
-   *
-   * @template T - The entity type
-   * @param selector - Selector to locate the Entities collection
-   * @param key - The entity key to search for
-   * @param store - Optional store snapshot to search in (defaults to current state)
-   * @returns The Entity or null if not found
-   *
-   * @example
-   * ```typescript
-   * const bookEntity = store.findEntityByKey(s => s.books, 123);
-   * if (bookEntity) {
-   *   console.log(bookEntity.value.title, bookEntity.loaded);
-   * }
-   * ```
-   */
-  public findEntityByKey<T extends BaseEntity<T['id']>>(
-    selector: (s: TStore) => Entities<T>,
-    key: T['id'],
-    store: TStore = this.value
-  ): Entity<T> | null {
-    const root = selector(store);
-    const position = root._entities.get(key);
-
-    return position === undefined ? null : (root._array[position] || null);
-  }
-
-  /**
-   * Finds an entity by its internal unique ID (synchronous).
-   *
-   * @template T - The entity type
-   * @param selector - Selector to locate the Entities collection
-   * @param uid - The internal unique ID assigned by the store
-   * @param store - Optional store snapshot to search in (defaults to current state)
-   * @returns The Entity or null if not found
-   *
-   * @remarks
-   * The uid is an internal identifier different from the entity's `id` property.
-   * It remains constant even if the entity is updated.
-   */
-  public findEntityByUniqueId<T extends BaseEntity<T['id']>>(
-    selector: (s: TStore) => Entities<T>,
-    uid: number,
-    store: TStore = this.value
-  ): Entity<T> | null {
-    const root = selector(store)
-
-    return root._array.find(e => e.uid === uid) || null;
-  }
-
-  /**
-   * Finds all entities matching a predicate (synchronous).
-   *
-   * @template T - The entity type
-   * @param selector - Selector to locate the Entities collection
-   * @param predicate - Function to test each entity
-   * @param store - Optional store snapshot to search in (defaults to current state)
-   * @returns Array of matching entities (may be empty)
-   *
-   * @example
-   * ```typescript
-   * const loadedEntities = store.findEntitiesBy(s => s.books, e => e.loaded);
-   * ```
-   */
-  public findEntitiesBy<T extends BaseEntity<T['id']>>(
-    selector: (s: TStore) => Entities<T>,
-    predicate: (item: Entity<T>) => boolean,
-    store: TStore = this.value
-  ): Entity<T>[] {
-    return selector(store)._array.filter(e => _isUndefined(e) === false && predicate(e));
   }
 
   /**
@@ -445,7 +351,7 @@ export class NgStore<TStore> {
     key: T['id'],
     store: TStore = this.value
   ): T | null {
-    return this.findEntityByKey(selector, key, store)?.value || null;
+    return this._findEntityByKey(selector, key, store)?.value || null;
   }
 
   /**
@@ -1120,7 +1026,7 @@ export class NgStore<TStore> {
     key: T['id']
   ): Observable<TReturn> {
     return this._innerFrom(() => {
-      const entity = this.findEntityByKey(root, key);
+      const entity = this._findEntityByKey(root, key);
 
       if (entity === null) {
         return throwError(() => 'The entity was not found in the store');
@@ -1727,6 +1633,27 @@ export class NgStore<TStore> {
 
   /********************************************************************** PRIVATE **********************************************************************/
 
+  /** @internal Finds the first entity matching a predicate */
+  private _findEntityBy<T extends BaseEntity<T['id']>>(
+    selector: (s: TStore) => Entities<T>,
+    predicate: (item: Entity<T>) => boolean,
+    store: TStore = this.value
+  ): Entity<T> | null {
+    return selector(store)._array.find(e => _isUndefined(e) === false && predicate(e)) || null;
+  }
+
+  /** @internal Finds an entity by its key. O(1) lookup. */
+  private _findEntityByKey<T extends BaseEntity<T['id']>>(
+    selector: (s: TStore) => Entities<T>,
+    key: T['id'],
+    store: TStore = this.value
+  ): Entity<T> | null {
+    const root = selector(store);
+    const position = root._entities.get(key);
+
+    return position === undefined ? null : (root._array[position] || null);
+  }
+
   /** @internal Sets entity state properties */
   private _setEntityState(root: StoreEntity, state: EntityStateOption) {
     Object.assign(root, state || {});
@@ -1878,7 +1805,7 @@ export class NgStore<TStore> {
   ): Observable<T> {
     return this._innerFrom(() => {
       let hasFailed = true;
-      const entity = typeof selector === 'function' ? this.findEntityBy(root, entity => (selector as ((entity: T) => boolean))(entity.value)) : this.findEntityByKey(root, selector as T['id']);
+      const entity = typeof selector === 'function' ? this._findEntityBy(root, entity => (selector as ((entity: T) => boolean))(entity.value)) : this._findEntityByKey(root, selector as T['id']);
       const state = entity ? entity.loaded : false;
 
       if (entity === null || state === false || force === true) {
@@ -1914,7 +1841,7 @@ export class NgStore<TStore> {
     loaded: boolean | null = null
   ) {
     let entity = key !== null
-      ? this.findEntityByKey(root as (s: TStore) => Entities<T>, key, draft)
+      ? this._findEntityByKey(root as (s: TStore) => Entities<T>, key, draft)
       : (root(draft) as Entity<TEntity>);
 
     if (entity !== null && key === null && '_array' in entity) {
