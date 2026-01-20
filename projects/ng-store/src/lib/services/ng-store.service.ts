@@ -451,47 +451,6 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Checks if an entity with the given key exists in the collection.
-   *
-   * @template T - The entity type
-   * @param selector - Selector to locate the Entities collection
-   * @param key - The entity key to check
-   * @returns True if the entity exists, false otherwise
-   *
-   * @example
-   * ```typescript
-   * if (store.hasEntity(s => s.books, bookId)) {
-   *   // Book exists
-   * }
-   * ```
-   */
-  public hasEntity<T extends BaseEntity<T['id']>>(
-    selector: (s: TStore) => Entities<T>,
-    key: T['id']
-  ): boolean {
-    return selector(this.value)._entities.has(key);
-  }
-
-  /**
-   * Returns an observable that emits `true` when the collection is loaded, then completes.
-   *
-   * @template T - The entity type
-   * @param selector - Selector to locate the Entities collection
-   * @returns Observable that emits true when loaded
-   *
-   * @deprecated This method will be removed in v3. Use `select(s => s.collection.loaded)` instead.
-   */
-  public isLoaded<T extends BaseEntity<T['id']>>(selector: (s: TStore) => Entities<T>): Observable<boolean> {
-    return this.select(selector)
-      .pipe(
-        map(entity => entity.loaded),
-        filter((loaded: boolean | null) => loaded === true),
-        map(() => true),
-        take(1)
-      );
-  }
-
-  /**
    * Returns an observable that emits whether a specific query URL has been executed.
    *
    * @param query - The query URL to check
@@ -578,9 +537,13 @@ export class NgStore<TStore> {
 
           for (const index of snapshotRoot._indiceNames) {
             const value = (entity.value as Record<string, unknown>)[index];
-            const mapArray = (draftRoot._indices[index].get(value) || []).filter(p => p !== position);
+            const mapArray = (draftRoot._indices[index].get(value) ?? []).filter(p => p !== position);
 
-            draftRoot._indices[index].set(value, mapArray);
+            if (mapArray.length === 0) {
+              draftRoot._indices[index].delete(value);
+            } else {
+              draftRoot._indices[index].set(value, mapArray);
+            }
           }
 
           delete draftRoot._array[position];
@@ -1757,7 +1720,7 @@ export class NgStore<TStore> {
             const map = root._indices[index];
 
             if (map.has(indexValue)) {
-              (map.get(indexValue) || []).push(position);
+              (map.get(indexValue) ?? []).push(position);
             }
             else {
               map.set(indexValue, [position]);
