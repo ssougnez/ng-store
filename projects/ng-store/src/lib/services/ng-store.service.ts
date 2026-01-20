@@ -422,26 +422,6 @@ export class NgStore<TStore> {
   }
 
   /**
-   * Gets all entities from a collection (synchronous).
-   *
-   * @template T - The entity type
-   * @param selector - Selector to locate the Entities collection
-   * @param store - Optional store snapshot to read from (defaults to current state)
-   * @returns Array of all entities in the collection
-   *
-   * @example
-   * ```typescript
-   * const allBookEntities = store.getEntities(s => s.books);
-   * ```
-   */
-  public getEntities<T extends BaseEntity<T['id']>>(
-    selector: (s: TStore) => Entities<T>,
-    store: TStore = this.value
-  ): Entity<T>[] {
-    return selector(store)._array.filter(e => _isUndefined(e) === false);
-  }
-
-  /**
    * Gets all values from a collection (synchronous).
    *
    * @template T - The entity type
@@ -458,7 +438,16 @@ export class NgStore<TStore> {
     selector: (s: TStore) => Entities<T>,
     store: TStore = this.value
   ): T[] {
-    return this.getEntities(selector, store).map(e => e.value);
+    const array = selector(store)._array;
+    const result: T[] = [];
+
+    for (const e of array) {
+      if (_isUndefined(e) === false) {
+        result.push(e.value);
+      }
+    }
+
+    return result;
   }
 
   /**
