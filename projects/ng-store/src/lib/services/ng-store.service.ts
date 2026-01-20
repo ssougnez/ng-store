@@ -552,23 +552,8 @@ export class NgStore<TStore> {
     }
   }
 
-  /**
-   * Creates a reactive selector for a part of the store.
-   *
-   * @template T - The selected type
-   * @param selector - Function to select a part of the store
-   * @returns Observable emitting the selected value, with distinct emissions only
-   *
-   * @example
-   * ```typescript
-   * // Select a primitive value
-   * const bookCount$ = store.select(s => s.books._array.length);
-   *
-   * // Select a nested object
-   * const uiState$ = store.select(s => s.ui.value);
-   * ```
-   */
-  public select<T>(selector: (s: TStore) => T): Observable<T> {
+  /** @internal Creates a reactive selector for a part of the store. */
+  private select<T>(selector: (s: TStore) => T): Observable<T> {
     return this.root
       .pipe(
         map(s => selector(s)),
@@ -655,7 +640,7 @@ export class NgStore<TStore> {
             throw new Error(`Index "${index}" is not defined. Available indices: ${[...root._indiceNames].join(', ') || 'none'}`);
           }
 
-          return (indexMap.get(value) || []).map(p => root._array[p].value as EntityOf<S, TStore>);
+          return (indexMap.get(value) ?? []).map(p => root._array[p].value);
         })
       );
   }
@@ -675,9 +660,22 @@ export class NgStore<TStore> {
     index: K,
     value: EntityOf<S, TStore>[K]
   ): Observable<EntityOf<S, TStore> | null> {
-    return this.selectValuesByIndex(selector, index, value)
+    return this.select(selector)
       .pipe(
-        map(values => values[0] || null)
+        distinctUntilChanged((prev, curr) => prev._array === curr._array),
+        map(root => {
+          const indexMap = root._indices[index];
+
+          if (!indexMap) {
+            throw new Error(`Index "${index}" is not defined. Available indices: ${[...root._indiceNames].join(', ') || 'none'}`);
+          }
+
+          const positions = indexMap.get(value);
+          const position = positions && positions.length !== 0 ? positions[0] : null;
+
+          return position !== null ? root._array[position].value as EntityOf<S, TStore> : null;
+        }),
+        distinctUntilChanged()
       );
   }
 
@@ -722,9 +720,18 @@ export class NgStore<TStore> {
     selector: (s: TStore) => Entities<T>,
     predicate: (item: T) => boolean
   ): Observable<T | null> {
-    return this.selectValuesBy(selector, predicate)
+    return this.select(selector)
       .pipe(
-        map(items => items[0] || null),
+        map(root => root._array),
+        distinctUntilChanged(),
+        map(array => {
+          for (const e of array) {
+            if (_isUndefined(e) === false && predicate(e.value)) {
+              return e.value;
+            }
+          }
+          return null;
+        }),
         distinctUntilChanged()
       );
   }
@@ -755,7 +762,7 @@ export class NgStore<TStore> {
         map(e => {
           const position = e._entities.get(key);
 
-          return position === undefined ? null : (e._array[position]?.value || null);
+          return position === undefined ? null : (e._array[position]?.value ?? null);
         }),
         distinctUntilChanged()
       )
