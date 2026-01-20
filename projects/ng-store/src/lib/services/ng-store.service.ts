@@ -7,11 +7,11 @@ import {
   BooleanProperties,
   Entities,
   Entity,
+  EntityOf,
   EntityStateOption,
   ExternalCall,
   IHttpClient,
   IndexOf,
-  InferEntityFromSelector,
   LoadableFlags,
   OnlyBoolean,
   StoreConfiguration,
@@ -66,7 +66,7 @@ export const createEntities = <T extends BaseEntity<T['id']>>(values: T[] = [], 
     _array: values.map(value => createEntity(value)),
     _indices: {},
     _entities: new Map<T['id'], number>(),
-    _indiceNames: new Set<Extract<keyof T, string>>(indices),
+    _indiceNames: new Set<string>(indices),
 
     loaded: false
   }
@@ -300,7 +300,7 @@ export class NgStore<TStore> {
   /**
    * Finds the first value by an indexed property (synchronous). O(1) lookup.
    *
-   * @template TSelector - The selector function type
+   * @template T - The entity type
    * @param selector - Selector to locate the Entities collection
    * @param index - Name of the indexed property
    * @param value - Value to search for in the index
@@ -314,12 +314,12 @@ export class NgStore<TStore> {
    * const book = store.findValueByIndex(s => s.books, 'authorId', 42);
    * ```
    */
-  public findValueByIndex<TSelector extends (s: TStore) => Entities<any>>(
-    selector: TSelector,
-    index: Extract<keyof InferEntityFromSelector<TSelector, TStore>, string>,
-    value: unknown,
+  public findValueByIndex<S extends (s: TStore) => Entities<any>, K extends Extract<keyof EntityOf<S, TStore>, string>>(
+    selector: S,
+    index: K,
+    value: EntityOf<S, TStore>[K],
     store: TStore = this.value
-  ): InferEntityFromSelector<TSelector, TStore> | null {
+  ): EntityOf<S, TStore> | null {
     const root = selector(store);
     const indexMap = root._indices[index];
 
@@ -330,7 +330,7 @@ export class NgStore<TStore> {
     const array = indexMap.get(value);
     const position = array && array.length !== 0 ? array[0] : null;
 
-    return position !== null ? root._array[position].value as InferEntityFromSelector<TSelector, TStore> : null;
+    return position !== null ? root._array[position].value as EntityOf<S, TStore> : null;
   }
 
   /**
@@ -380,7 +380,7 @@ export class NgStore<TStore> {
   /**
    * Finds all values by an indexed property (synchronous). O(1) lookup.
    *
-   * @template TSelector - The selector function type
+   * @template T - The entity type
    * @param selector - Selector to locate the Entities collection
    * @param index - Name of the indexed property
    * @param value - Value to search for in the index
@@ -394,12 +394,12 @@ export class NgStore<TStore> {
    * const authorBooks = store.findValuesByIndex(s => s.books, 'authorId', 42);
    * ```
    */
-  public findValuesByIndex<TSelector extends (s: TStore) => Entities<any>>(
-    selector: TSelector,
-    index: Extract<keyof InferEntityFromSelector<TSelector, TStore>, string>,
-    value: unknown,
+  public findValuesByIndex<S extends (s: TStore) => Entities<any>, K extends Extract<keyof EntityOf<S, TStore>, string>>(
+    selector: S,
+    index: K,
+    value: EntityOf<S, TStore>[K],
     store: TStore = this.value
-  ): InferEntityFromSelector<TSelector, TStore>[] | null {
+  ): EntityOf<S, TStore>[] {
     const root = selector(store);
     const indexMap = root._indices[index];
 
@@ -408,10 +408,10 @@ export class NgStore<TStore> {
     }
 
     const array = indexMap.get(value) || [];
-    const result: InferEntityFromSelector<TSelector, TStore>[] = [];
+    const result: EntityOf<S, TStore>[] = [];
 
     for (const position of array) {
-      result.push(root._array[position].value as InferEntityFromSelector<TSelector, TStore>);
+      result.push(root._array[position].value as EntityOf<S, TStore>);
     }
 
     return result;
@@ -584,7 +584,7 @@ export class NgStore<TStore> {
           draftRoot._entities.delete(key);
 
           for (const index of snapshotRoot._indiceNames) {
-            const value = entity.value[index];
+            const value = (entity.value as Record<string, unknown>)[index];
             const mapArray = (draftRoot._indices[index].get(value) || []).filter(p => p !== position);
 
             draftRoot._indices[index].set(value, mapArray);
@@ -669,7 +669,7 @@ export class NgStore<TStore> {
   /**
    * Returns an observable of values by an indexed property. O(1) lookup.
    *
-   * @template TSelector - The selector function type
+   * @template T - The entity type
    * @param selector - Selector to locate the Entities collection
    * @param index - Name of the indexed property
    * @param value - Value to search for in the index
@@ -684,11 +684,11 @@ export class NgStore<TStore> {
    * });
    * ```
    */
-  public selectValuesByIndex<TSelector extends (s: TStore) => Entities<any>>(
-    selector: TSelector,
-    index: Extract<keyof InferEntityFromSelector<TSelector, TStore>, string>,
-    value: unknown
-  ): Observable<InferEntityFromSelector<TSelector, TStore>[]> {
+  public selectValuesByIndex<S extends (s: TStore) => Entities<any>, K extends Extract<keyof EntityOf<S, TStore>, string>>(
+    selector: S,
+    index: K,
+    value: EntityOf<S, TStore>[K]
+  ): Observable<EntityOf<S, TStore>[]> {
     return this.select(selector)
       .pipe(
         distinctUntilChanged((prev, curr) => prev._array === curr._array),
@@ -699,7 +699,7 @@ export class NgStore<TStore> {
             throw new Error(`Index "${index}" is not defined. Available indices: ${[...root._indiceNames].join(', ') || 'none'}`);
           }
 
-          return (indexMap.get(value) || []).map(p => root._array[p].value as InferEntityFromSelector<TSelector, TStore>);
+          return (indexMap.get(value) || []).map(p => root._array[p].value as EntityOf<S, TStore>);
         })
       );
   }
@@ -707,18 +707,18 @@ export class NgStore<TStore> {
   /**
    * Returns an observable of the first value by an indexed property. O(1) lookup.
    *
-   * @template TSelector - The selector function type
+   * @template T - The entity type
    * @param selector - Selector to locate the Entities collection
    * @param index - Name of the indexed property
    * @param value - Value to search for in the index
    * @returns Observable emitting the first matching value or null
    * @throws Error if the specified index does not exist
    */
-  public selectValueByIndex<TSelector extends (s: TStore) => Entities<any>>(
-    selector: TSelector,
-    index: Extract<keyof InferEntityFromSelector<TSelector, TStore>, string>,
-    value: unknown
-  ): Observable<InferEntityFromSelector<TSelector, TStore> | null> {
+  public selectValueByIndex<S extends (s: TStore) => Entities<any>, K extends Extract<keyof EntityOf<S, TStore>, string>>(
+    selector: S,
+    index: K,
+    value: EntityOf<S, TStore>[K]
+  ): Observable<EntityOf<S, TStore> | null> {
     return this.selectValuesByIndex(selector, index, value)
       .pipe(
         map(values => values[0] || null)
@@ -1538,7 +1538,7 @@ export class NgStore<TStore> {
         }
 
         for (const index of entities._indiceNames) {
-          const value = entity.value[index];
+          const value = (entity.value as Record<string, unknown>)[index];
           const map = entities._indices[index];
 
           if (map.has(value)) {
@@ -1616,7 +1616,7 @@ export class NgStore<TStore> {
         const entity = entities._array[i];
 
         for (const index of entities._indiceNames) {
-          const value = entity.value[index];
+          const value = (entity.value as Record<string, unknown>)[index];
           const map = entities._indices[index];
 
           if (map.has(value)) {
@@ -1677,7 +1677,7 @@ export class NgStore<TStore> {
 
       if (entity) {
         for (const index of snapshotRoot._indiceNames) {
-          const value = entity.value[index];
+          const value = (entity.value as Record<string, unknown>)[index];
           const array = (draftRoot._indices[index].get(value) || []).filter(p => p !== position);
 
           draftRoot._indices[index].set(value, array);
@@ -1690,7 +1690,7 @@ export class NgStore<TStore> {
         }
 
         for (const index of snapshotRoot._indiceNames) {
-          const value = entity.value[index];
+          const value = (entity.value as Record<string, unknown>)[index];
 
           if (draftRoot._indices[index].has(value)) {
             draftRoot._indices[index].get(value)!.push(position);
@@ -1718,11 +1718,14 @@ export class NgStore<TStore> {
         const position = root._entities.get(value.id)!;
 
         for (const index of root._indiceNames) {
-          if (index in value && value[index] !== existing.value[index]) {
+          const valueAsRecord = value as Record<string, unknown>;
+          const existingAsRecord = existing.value as Record<string, unknown>;
+
+          if (index in value && valueAsRecord[index] !== existingAsRecord[index]) {
             const map = root._indices[index];
 
-            const oldValue = existing.value[index];
-            const newValue = value[index];
+            const oldValue = existingAsRecord[index];
+            const newValue = valueAsRecord[index];
 
             if (_isUndefined(oldValue) === false) {
               map.set(oldValue, (map.get(oldValue) || []).filter(p => p !== position));
@@ -1751,7 +1754,7 @@ export class NgStore<TStore> {
 
         for (const index of root._indiceNames) {
           if (index in value) {
-            const indexValue = value[index];
+            const indexValue = (value as Record<string, unknown>)[index];
             const map = root._indices[index];
 
             if (map.has(indexValue)) {
