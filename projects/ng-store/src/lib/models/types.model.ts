@@ -77,7 +77,6 @@ export type BaseEntity<TKey> = {
  * Wrapper around a single value with loading state
  */
 export type Entity<T> = {
-  readonly uid: number;
   loaded: boolean;
   value: T;
 }
@@ -86,8 +85,6 @@ export type Entity<T> = {
  * Collection of entities with internal indexing for O(1) lookups
  */
 export type Entities<T extends BaseEntity<T['id']>> = {
-  readonly uid: number;
-
   /** Internal map from entity id to array position */
   _entities: Map<T['id'], number>;
 

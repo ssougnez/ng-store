@@ -19,24 +19,21 @@ import {
 } from '../models';
 import { NG_STORE_CONFIG } from '../tokens';
 
-let nextUniqueId = 0;
-
 /**
  * Creates a new Entity wrapper for a value.
  *
  * @template T - The type of value to wrap
  * @param value - The value to wrap in an Entity
- * @returns A new Entity containing the value with a unique ID and loaded state
+ * @returns A new Entity containing the value with loaded state
  *
  * @example
  * ```typescript
  * const bookEntity = createEntity({ id: 1, title: 'Angular Guide' });
- * // { uid: 0, loaded: true, value: { id: 1, title: 'Angular Guide' } }
+ * // { loaded: true, value: { id: 1, title: 'Angular Guide' } }
  * ```
  */
 export const createEntity = <T>(value: T): Entity<T> => {
   return {
-    uid: nextUniqueId++,
     loaded: !!value,
     value: value
   }
@@ -61,8 +58,6 @@ export const createEntity = <T>(value: T): Entity<T> => {
  */
 export const createEntities = <T extends BaseEntity<T['id']>>(values: T[] = [], indices: IndexOf<T>[] = []): Entities<T> => {
   const entities: Entities<T> = {
-    uid: nextUniqueId++,
-
     _array: values.map(value => createEntity(value)),
     _indices: {},
     _entities: new Map<T['id'], number>(),
@@ -374,7 +369,16 @@ export class NgStore<TStore> {
     predicate: (item: T) => boolean,
     store: TStore = this.value
   ): T[] {
-    return selector(store)._array.filter(e => _isUndefined(e) === false && predicate(e.value)).map(e => e.value);
+    const array = selector(store)._array;
+    const result: T[] = [];
+
+    for (const e of array) {
+      if (_isUndefined(e) === false && predicate(e.value)) {
+        result.push(e.value);
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -411,7 +415,7 @@ export class NgStore<TStore> {
     const result: EntityOf<S, TStore>[] = [];
 
     for (const position of array) {
-      result.push(root._array[position].value as EntityOf<S, TStore>);
+      result.push(root._array[position].value);
     }
 
     return result;
@@ -861,7 +865,13 @@ export class NgStore<TStore> {
   ) {
     this.update((d, s) => {
       const entities = root(s);
-      const ids = entities._array.filter(e => selector(e) === true).map(e => e.value.id);
+      const ids: T['id'][] = [];
+
+      for (const e of entities._array) {
+        if (selector(e) === true) {
+          ids.push(e.value.id);
+        }
+      }
 
       for (const id of ids) {
         this._updateEntityByKey(d, s, root, id, updater);
