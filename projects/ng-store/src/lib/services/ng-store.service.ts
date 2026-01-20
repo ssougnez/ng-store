@@ -238,7 +238,7 @@ export class NgStore<TStore> {
   public batch(operations: () => void): void {
     if (this._isBatching) {
       operations();
-      
+
       return;
     }
 
@@ -1252,7 +1252,7 @@ export class NgStore<TStore> {
    * ).subscribe();
    * ```
    */
-  public loadEntities<T extends BaseEntity<T['id']>, TDependent extends LoadableFlags, TData extends BaseEntity<TData['id']> = T>(
+  public loadEntities<T extends BaseEntity<T['id']>, TDependent extends { [K in keyof OnlyBoolean<TDependent>]?: boolean }, TData extends BaseEntity<TData['id']> = T>(
     url: string | ExternalCall<(T | TData)[]>,
     root: (s: TStore) => Entities<T>,
     dependentRoot: (s: TStore) => TDependent | null,
