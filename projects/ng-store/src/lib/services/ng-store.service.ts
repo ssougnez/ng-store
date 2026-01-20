@@ -11,6 +11,7 @@ import {
   ExternalCall,
   IHttpClient,
   IndexOf,
+  InferEntityFromSelector,
   LoadableFlags,
   OnlyBoolean,
   StoreConfiguration,
@@ -299,7 +300,7 @@ export class NgStore<TStore> {
   /**
    * Finds the first value by an indexed property (synchronous). O(1) lookup.
    *
-   * @template T - The entity type
+   * @template TSelector - The selector function type
    * @param selector - Selector to locate the Entities collection
    * @param index - Name of the indexed property
    * @param value - Value to search for in the index
@@ -313,12 +314,12 @@ export class NgStore<TStore> {
    * const book = store.findValueByIndex(s => s.books, 'authorId', 42);
    * ```
    */
-  public findValueByIndex<T extends BaseEntity<T['id']>>(
-    selector: (s: TStore) => Entities<T>,
-    index: Extract<keyof T, string>,
-    value: any,
+  public findValueByIndex<TSelector extends (s: TStore) => Entities<any>>(
+    selector: TSelector,
+    index: Extract<keyof InferEntityFromSelector<TSelector, TStore>, string>,
+    value: unknown,
     store: TStore = this.value
-  ): T | null {
+  ): InferEntityFromSelector<TSelector, TStore> | null {
     const root = selector(store);
     const indexMap = root._indices[index];
 
@@ -329,7 +330,7 @@ export class NgStore<TStore> {
     const array = indexMap.get(value);
     const position = array && array.length !== 0 ? array[0] : null;
 
-    return position !== null ? root._array[position].value : null;
+    return position !== null ? root._array[position].value as InferEntityFromSelector<TSelector, TStore> : null;
   }
 
   /**
@@ -379,7 +380,7 @@ export class NgStore<TStore> {
   /**
    * Finds all values by an indexed property (synchronous). O(1) lookup.
    *
-   * @template T - The entity type
+   * @template TSelector - The selector function type
    * @param selector - Selector to locate the Entities collection
    * @param index - Name of the indexed property
    * @param value - Value to search for in the index
@@ -393,12 +394,12 @@ export class NgStore<TStore> {
    * const authorBooks = store.findValuesByIndex(s => s.books, 'authorId', 42);
    * ```
    */
-  public findValuesByIndex<T extends BaseEntity<T['id']>>(
-    selector: (s: TStore) => Entities<T>,
-    index: Extract<keyof T, string>,
-    value: any,
+  public findValuesByIndex<TSelector extends (s: TStore) => Entities<any>>(
+    selector: TSelector,
+    index: Extract<keyof InferEntityFromSelector<TSelector, TStore>, string>,
+    value: unknown,
     store: TStore = this.value
-  ): T[] | null {
+  ): InferEntityFromSelector<TSelector, TStore>[] | null {
     const root = selector(store);
     const indexMap = root._indices[index];
 
@@ -407,10 +408,10 @@ export class NgStore<TStore> {
     }
 
     const array = indexMap.get(value) || [];
-    const result: T[] = [];
+    const result: InferEntityFromSelector<TSelector, TStore>[] = [];
 
     for (const position of array) {
-      result.push(root._array[position].value);
+      result.push(root._array[position].value as InferEntityFromSelector<TSelector, TStore>);
     }
 
     return result;
@@ -668,7 +669,7 @@ export class NgStore<TStore> {
   /**
    * Returns an observable of values by an indexed property. O(1) lookup.
    *
-   * @template T - The entity type
+   * @template TSelector - The selector function type
    * @param selector - Selector to locate the Entities collection
    * @param index - Name of the indexed property
    * @param value - Value to search for in the index
@@ -683,11 +684,11 @@ export class NgStore<TStore> {
    * });
    * ```
    */
-  public selectValuesByIndex<T extends BaseEntity<T['id']>>(
-    selector: (s: TStore) => Entities<T>,
-    index: Extract<keyof T, string>,
-    value: any
-  ): Observable<T[]> {
+  public selectValuesByIndex<TSelector extends (s: TStore) => Entities<any>>(
+    selector: TSelector,
+    index: Extract<keyof InferEntityFromSelector<TSelector, TStore>, string>,
+    value: unknown
+  ): Observable<InferEntityFromSelector<TSelector, TStore>[]> {
     return this.select(selector)
       .pipe(
         distinctUntilChanged((prev, curr) => prev._array === curr._array),
@@ -698,7 +699,7 @@ export class NgStore<TStore> {
             throw new Error(`Index "${index}" is not defined. Available indices: ${[...root._indiceNames].join(', ') || 'none'}`);
           }
 
-          return (indexMap.get(value) || []).map(p => root._array[p].value);
+          return (indexMap.get(value) || []).map(p => root._array[p].value as InferEntityFromSelector<TSelector, TStore>);
         })
       );
   }
@@ -706,18 +707,18 @@ export class NgStore<TStore> {
   /**
    * Returns an observable of the first value by an indexed property. O(1) lookup.
    *
-   * @template T - The entity type
+   * @template TSelector - The selector function type
    * @param selector - Selector to locate the Entities collection
    * @param index - Name of the indexed property
    * @param value - Value to search for in the index
    * @returns Observable emitting the first matching value or null
    * @throws Error if the specified index does not exist
    */
-  public selectValueByIndex<T extends BaseEntity<T['id']>>(
-    selector: (s: TStore) => Entities<T>,
-    index: Extract<keyof T, string>,
-    value: any
-  ): Observable<T> {
+  public selectValueByIndex<TSelector extends (s: TStore) => Entities<any>>(
+    selector: TSelector,
+    index: Extract<keyof InferEntityFromSelector<TSelector, TStore>, string>,
+    value: unknown
+  ): Observable<InferEntityFromSelector<TSelector, TStore> | null> {
     return this.selectValuesByIndex(selector, index, value)
       .pipe(
         map(values => values[0] || null)

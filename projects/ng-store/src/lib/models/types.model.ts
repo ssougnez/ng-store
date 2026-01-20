@@ -52,6 +52,36 @@ export type LoadableFlags = Record<string, boolean | null | undefined>;
  */
 export type IndexOf<T> = Extract<keyof T, string>;
 
+/**
+ * Extracts the entity type T from an Entities<T> collection type.
+ * Used internally to properly infer entity types from selector functions.
+ *
+ * @template E - The Entities collection type
+ *
+ * @example
+ * ```typescript
+ * type Books = Entities<Book>;
+ * type ExtractedBook = EntityTypeOf<Books>; // Book
+ * ```
+ */
+export type EntityTypeOf<E> = E extends Entities<infer T> ? T : never;
+
+/**
+ * Extracts the entity type T from a selector function that returns Entities<T>.
+ * This helper enables proper type inference when using selector functions.
+ *
+ * @template S - The selector function type
+ * @template TStore - The store type
+ *
+ * @example
+ * ```typescript
+ * type Selector = (s: AppStore) => Entities<Book>;
+ * type ExtractedBook = InferEntityFromSelector<Selector, AppStore>; // Book
+ * ```
+ */
+export type InferEntityFromSelector<S, TStore> =
+  S extends (s: TStore) => Entities<infer T> ? T : never;
+
 /****************************************************************** ENTITY TYPES ******************************************************************/
 
 /**

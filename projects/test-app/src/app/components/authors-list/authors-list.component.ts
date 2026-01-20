@@ -30,4 +30,9 @@ export class AuthorsListComponent {
     this.selectedAuthorId.set(author.id);
     this.authorSelected.emit(author.id);
   }
+
+  ngOnInit() {
+    // findValueByIndex now correctly infers Author type and suggests all its properties
+    const author = this._store.findValueByIndex(s => s.authors, 'name', 'John Doe');
+  }
 }

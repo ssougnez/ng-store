@@ -21,7 +21,7 @@ export class BooksListComponent {
 
   protected readonly booksAction = new QueryAction({
     query: () => this._bookService.loadByAuthorId(this.authorId()),
-    data: () => this._store.selectValuesByIndex<Book>(s => s.books, 'authorId', this.authorId())
+    data: () => this._store.selectValuesByIndex(s => s.books, 'authorId', this.authorId())
   });
 
   protected readonly togglePublishedAction = new ExecuteAction<Book, Book>({
