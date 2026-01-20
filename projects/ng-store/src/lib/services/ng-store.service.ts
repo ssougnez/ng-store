@@ -407,7 +407,7 @@ export class NgStore<TStore> {
       throw new Error(`Index "${index}" is not defined. Available indices: ${[...root._indiceNames].join(', ') || 'none'}`);
     }
 
-    const array = indexMap.get(value) || [];
+    const array = indexMap.get(value) ?? [];
     const result: EntityOf<S, TStore>[] = [];
 
     for (const position of array) {
