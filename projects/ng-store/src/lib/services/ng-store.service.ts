@@ -768,25 +768,8 @@ export class NgStore<TStore> {
       )
   }
 
-  /**
-   * Updates the store state using Immer's produce function.
-   *
-   * @param updater - Function that mutates the draft state
-   *
-   * @remarks
-   * The updater receives two parameters:
-   * - `draft`: Mutable draft of the state (mutate this directly)
-   * - `original`: Read-only original state (for reference)
-   *
-   * @example
-   * ```typescript
-   * store.update((draft, original) => {
-   *   draft.ui.value.loading = true;
-   *   draft.ui.value.lastUpdated = new Date();
-   * });
-   * ```
-   */
-  public update(updater: (draft: TStore, original: TStore) => void) {
+  /** @internal Updates the store state using Immer's produce function. */
+  private update(updater: (draft: TStore, original: TStore) => void) {
     const baseState = this.value;
 
     // DO NOT REMOVE THE BRACKETS FOR THE SECOND PARAMETER AS BECAUSE OF CURRYING IT WOULD MEAN SOMETHING ELSE
