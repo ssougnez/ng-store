@@ -7,7 +7,6 @@ import {
   Entities,
   Entity,
   EntityOf,
-  EntityStateOption,
   ExternalCall,
   IHttpClient,
   IndexOf,
@@ -838,15 +837,15 @@ export class NgStore<TStore> {
    * store.upsertValues(s => s.books, [book1, book2, book3]);
    *
    * // With partial loading state
-   * store.upsertValues(s => s.books, partialBooks, { loaded: false });
+   * store.upsertValues(s => s.books, partialBooks, false);
    * ```
    */
   public upsertValues<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
     values: T[],
-    state?: EntityStateOption
+    loaded?: boolean
   ) {
-    this._update(d => this._upsertEntities(selector(d), values, state || {}));
+    this._update(d => this._upsertEntities(selector(d), values, loaded));
   }
 
   /**
@@ -856,22 +855,22 @@ export class NgStore<TStore> {
    * @template T - The entity type
    * @param selector - Selector to locate the Entities collection
    * @param value - Value to upsert
-   * @param state - Optional entity state options
+   * @param loaded - Optional flag to indicate if value is fully loaded
    *
    * @example
    * ```typescript
    * store.upsertValue(s => s.books, newBook);
    *
    * // Mark as not fully loaded
-   * store.upsertValue(s => s.books, partialBook, { loaded: false });
+   * store.upsertValue(s => s.books, partialBook, false);
    * ```
    */
   public upsertValue<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
     value: T,
-    state?: EntityStateOption
+    loaded?: boolean
   ) {
-    this._update(d => this._upsertEntities(selector(d), [value], state || {}));
+    this._update(d => this._upsertEntities(selector(d), [value], loaded));
   }
 
   /**
@@ -966,7 +965,7 @@ export class NgStore<TStore> {
         return query
           .pipe(
             map(data => data as unknown as T[]),
-            tap(data => this.upsertValues(root, data, { loaded: entitiesLoaded })),
+            tap(data => this.upsertValues(root, data, entitiesLoaded)),
             tap(() => this._update(d => {
               entities.forEach(e => {
                 const value = this.findValueByKey(dependentRoot, e.key, d) as (OnlyBoolean<TDependent> | null);
@@ -1036,7 +1035,7 @@ export class NgStore<TStore> {
           .pipe(
             map(data => Array.isArray(data) ? data : [data]),
             map((data: (T | TData)[]) => data as T[]),
-            tap(data => this.upsertValues(root, data, { loaded: entitiesLoaded })),
+            tap(data => this.upsertValues(root, data, entitiesLoaded)),
             tap(() => this._update(d => { root(d).loaded = true; })),
             catchError(err => {
               this._update(d => { root(d).loaded = state; });
@@ -1090,7 +1089,7 @@ export class NgStore<TStore> {
           .pipe(
             map(data => Array.isArray(data) ? data : [data]),
             map((data: (T | TData)[]) => data as T[]),
-            tap(data => this.upsertValues(root, data, { loaded: entitiesLoaded })),
+            tap(data => this.upsertValues(root, data, entitiesLoaded)),
             tap(() => {
               this._executedQueries.add(url);
               this._executedQueriesSubject.next(this._executedQueries);
@@ -1154,7 +1153,7 @@ export class NgStore<TStore> {
           .pipe(
             map(data => Array.isArray(data) ? data : [data]),
             map((data: (T | TData)[]) => data as T[]),
-            tap(data => this.upsertValues(root, data, { loaded: entitiesLoaded })),
+            tap(data => this.upsertValues(root, data, entitiesLoaded)),
             tap(() => dependentRoot && this._update(d => { (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = true; })),
             catchError(err => {
               dependentRoot && this._update(d => { (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = state; });
@@ -1202,7 +1201,7 @@ export class NgStore<TStore> {
         return this._getLoadQuery<T | TData>(url)
           .pipe(
             map((data: T | TData) => data as T),
-            tap((data: T) => this.upsertValue(root, data, { loaded: entityLoaded })),
+            tap((data: T) => this.upsertValue(root, data, entityLoaded)),
             tap(() => dependentRoot && this._update(d => { dependentRoot(d)[stateProperty] = true as any; })),
             catchError(err => {
               this._update(d => { (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = state; });
@@ -1530,9 +1529,11 @@ export class NgStore<TStore> {
     return position === undefined ? null : (root._array[position] || null);
   }
 
-  /** @internal Sets entity state properties */
-  private _setEntityState(root: StoreEntity, state: EntityStateOption) {
-    Object.assign(root, state || {});
+  /** @internal Sets entity loaded state */
+  private _setEntityLoaded(root: StoreEntity, loaded: boolean | undefined) {
+    if (loaded !== undefined) {
+      root.loaded = loaded;
+    }
   }
 
   /** @internal Updates a value by key within an Immer draft */
@@ -1590,10 +1591,9 @@ export class NgStore<TStore> {
   private _upsertEntities<T extends BaseEntity<T['id']>>(
     root: Entities<T>,
     values: T[],
-    state: EntityStateOption
+    loaded: boolean | undefined
   ) {
     for (const value of values) {
-      const entityState = { ...state };
       const position = root._entities.get(value.id);
       const existing = position === undefined ? null : root._array[position];
 
@@ -1620,11 +1620,9 @@ export class NgStore<TStore> {
 
         existing.value = { ...existing.value, ...value };
 
-        if (entityState?.loaded === false && existing.loaded === true) {
-          entityState.loaded = true;
-        }
-
-        this._setEntityState(existing, entityState);
+        // Don't "unload" an already loaded entity
+        const effectiveLoaded = loaded === false && existing.loaded === true ? undefined : loaded;
+        this._setEntityLoaded(existing, effectiveLoaded);
       }
       else {
         const entity = createEntity(value);
@@ -1649,7 +1647,7 @@ export class NgStore<TStore> {
           }
         }
 
-        this._setEntityState(entity, state);
+        this._setEntityLoaded(entity, loaded);
       }
     }
   }
@@ -1699,7 +1697,7 @@ export class NgStore<TStore> {
         return this._getLoadQuery<T | TData>(url)
           .pipe(
             map(data => data as T),
-            tap(data => this.upsertValue(root, data, { loaded: entityLoaded })),
+            tap(data => this.upsertValue(root, data, entityLoaded)),
             tap(data => this._update(d => this._setEntityStates(d, root, data.id, entityLoaded))),
             tap(() => hasFailed = false),
             finalize(() => {

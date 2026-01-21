@@ -110,13 +110,6 @@ export type EntityIndices<T> = {
 }
 
 /**
- * Options for setting entity state
- */
-export type EntityStateOption = {
-  loaded?: boolean;
-}
-
-/**
  * Union type for any store entity (single or collection)
  */
 export type StoreEntity = Entities<BaseEntity<unknown>> | Entity<unknown>;
