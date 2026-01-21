@@ -1,0 +1,24 @@
+<section class="panel biography-panel">
+  <h2>Biography</h2>
+
+  <ngs-container [action]="authorAction"
+                 loaderType="text"
+                 loaderText="Loading biography...">
+    <ng-container *ngsTemplate="authorAction as author">
+
+      @if (author) {
+        @if (author.biography; as biography) {
+          <div class="biography-content">
+            <h3>{{ author.name }}</h3>
+            @for (paragraph of biography.split('\n\n'); track $index) {
+              <p>{{ paragraph }}</p>
+            }
+          </div>
+        } @else {
+          <p class="empty">No biography available for this author.</p>
+        }
+      }
+
+    </ng-container>
+  </ngs-container>
+</section>

@@ -7,13 +7,16 @@
       <!-- Authors Panel -->
       <app-authors-list (authorSelected)="onAuthorSelected($event)" />
 
-      <!-- Books Panel -->
+      <!-- Author Details Panel -->
       @if (selectedAuthorId(); as authorId) {
-        <app-books-list [authorId]="authorId" />
+        <div class="author-details">
+          <app-author-biography [authorId]="authorId" />
+          <app-books-list [authorId]="authorId" />
+        </div>
       } @else {
         <section class="panel books-panel">
-          <h2>Books</h2>
-          <p class="empty">Select an author to see their books.</p>
+          <h2>Author Details</h2>
+          <p class="empty">Select an author to see their biography and books.</p>
         </section>
       }
     </div>

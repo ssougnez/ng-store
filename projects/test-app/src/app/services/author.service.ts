@@ -12,7 +12,16 @@ export class AuthorService {
   public loadAll(): Observable<Author[]> {
     return this._store.loadAllEntities<Author>(
       '/api/authors',
-      s => s.authors
+      s => s.authors,
+      false  // entities not fully loaded (no biography)
+    );
+  }
+
+  public loadAuthorByKey(id: number): Observable<Author> {
+    return this._store.loadEntityByKey<Author>(
+      `/api/authors/${id}`,
+      s => s.authors,
+      id
     );
   }
 

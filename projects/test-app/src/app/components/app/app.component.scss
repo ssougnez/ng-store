@@ -39,6 +39,12 @@ h4 {
   margin-top: 2rem;
 }
 
+.author-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
 .panel {
   background: white;
   border-radius: 8px;

@@ -1620,7 +1620,6 @@ export class NgStore<TStore> {
 
         existing.value = { ...existing.value, ...value };
 
-        // Don't "unload" an already loaded entity
         const effectiveLoaded = loaded === false && existing.loaded === true ? undefined : loaded;
         this._setEntityLoaded(existing, effectiveLoaded);
       }

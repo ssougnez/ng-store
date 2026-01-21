@@ -1,0 +1,40 @@
+.panel {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  color: #555;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 0.5rem;
+  margin-top: 0;
+}
+
+.biography-content {
+  h3 {
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 1rem;
+  }
+
+  p {
+    color: #444;
+    line-height: 1.6;
+    margin: 0 0 1rem;
+    text-align: justify;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.empty {
+  color: #888;
+  font-style: italic;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+}

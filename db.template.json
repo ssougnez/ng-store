@@ -1,8 +1,26 @@
 {
   "authors": [
-    { "id": 1, "name": "Victor Hugo", "country": "France", "booksLoaded": false },
-    { "id": 2, "name": "George Orwell", "country": "United Kingdom", "booksLoaded": false },
-    { "id": 3, "name": "Gabriel Garcia Marquez", "country": "Colombia", "booksLoaded": false }
+    {
+      "id": 1,
+      "name": "Victor Hugo",
+      "country": "France",
+      "booksLoaded": false,
+      "biography": "Victor Hugo (1802-1885) was a French poet, novelist, and dramatist of the Romantic movement.\n\nHe is considered one of the greatest French writers. His most famous works include Les Miserables and Notre-Dame de Paris (The Hunchback of Notre-Dame).\n\nHugo was also a passionate advocate for social justice and human rights, using his writing to champion the poor and oppressed."
+    },
+    {
+      "id": 2,
+      "name": "George Orwell",
+      "country": "United Kingdom",
+      "booksLoaded": false,
+      "biography": "George Orwell (1903-1950), born Eric Arthur Blair, was an English novelist, essayist, and critic.\n\nHe is best known for his allegorical novella Animal Farm and the dystopian novel 1984, which have become classics of political literature.\n\nOrwell's work is characterized by lucid prose, social criticism, and opposition to totalitarianism."
+    },
+    {
+      "id": 3,
+      "name": "Gabriel Garcia Marquez",
+      "country": "Colombia",
+      "booksLoaded": false,
+      "biography": "Gabriel Garcia Marquez (1927-2014) was a Colombian novelist, short-story writer, and journalist.\n\nHe was awarded the Nobel Prize in Literature in 1982 for his novels and short stories, in which the fantastic and the realistic are combined in a richly composed world of imagination.\n\nHe is considered one of the most significant authors of the 20th century, and his work popularized the literary style known as magical realism."
+    }
   ],
   "books": [
     { "id": 1, "title": "Les Miserables", "year": 1862, "authorId": 1 },

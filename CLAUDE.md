@@ -74,6 +74,14 @@ The store expects an HTTP client implementing `IHttpClient` interface (get, post
 - @areaprog/rxjs-plus (peer dependency)
 - RxJS
 
+## Test Data (json-server)
+
+The test app uses json-server to mock an API. There are two JSON files:
+- `db.template.json` - The source template, committed to git. **Always modify this file** when changing test data.
+- `db.json` - The working copy used by json-server at runtime. This file is gitignored and regenerated from the template.
+
+When adding or modifying test data (authors, books, etc.), edit `db.template.json`, not `db.json`.
+
 ## Windows Notes
 
 Always delete the `NUL` file if it gets created. On Windows, commands like `> NUL` create a file instead of redirecting to null device.
