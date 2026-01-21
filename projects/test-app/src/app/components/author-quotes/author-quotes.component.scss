@@ -1,0 +1,38 @@
+.panel {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  color: #555;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 0.5rem;
+  margin-top: 0;
+}
+
+.quotes-content {
+  blockquote {
+    margin: 0 0 1rem;
+    padding: 1rem 1.5rem;
+    background: #f8f9fa;
+    border-left: 4px solid #6c757d;
+    border-radius: 0 4px 4px 0;
+    font-style: italic;
+    color: #495057;
+    line-height: 1.6;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.empty {
+  color: #888;
+  font-style: italic;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+}

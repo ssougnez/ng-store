@@ -11,6 +11,7 @@
       @if (selectedAuthorId(); as authorId) {
         <div class="author-details">
           <app-author-biography [authorId]="authorId" />
+          <app-author-quotes [authorId]="authorId" />
           <app-books-list [authorId]="authorId" />
         </div>
       } @else {

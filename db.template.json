@@ -4,22 +4,22 @@
       "id": 1,
       "name": "Victor Hugo",
       "country": "France",
-      "booksLoaded": false,
-      "biography": "Victor Hugo (1802-1885) was a French poet, novelist, and dramatist of the Romantic movement.\n\nHe is considered one of the greatest French writers. His most famous works include Les Miserables and Notre-Dame de Paris (The Hunchback of Notre-Dame).\n\nHugo was also a passionate advocate for social justice and human rights, using his writing to champion the poor and oppressed."
+      "biography": "Victor Hugo (1802-1885) was a French poet, novelist, and dramatist of the Romantic movement.\n\nHe is considered one of the greatest French writers. His most famous works include Les Miserables and Notre-Dame de Paris (The Hunchback of Notre-Dame).\n\nHugo was also a passionate advocate for social justice and human rights, using his writing to champion the poor and oppressed.",
+      "quotes": "\"Even the darkest night will end and the sun will rise.\"\n\n\"To love another person is to see the face of God.\"\n\n\"Laughter is the sun that drives winter from the human face.\"\n\n\"He who opens a school door, closes a prison.\""
     },
     {
       "id": 2,
       "name": "George Orwell",
       "country": "United Kingdom",
-      "booksLoaded": false,
-      "biography": "George Orwell (1903-1950), born Eric Arthur Blair, was an English novelist, essayist, and critic.\n\nHe is best known for his allegorical novella Animal Farm and the dystopian novel 1984, which have become classics of political literature.\n\nOrwell's work is characterized by lucid prose, social criticism, and opposition to totalitarianism."
+      "biography": "George Orwell (1903-1950), born Eric Arthur Blair, was an English novelist, essayist, and critic.\n\nHe is best known for his allegorical novella Animal Farm and the dystopian novel 1984, which have become classics of political literature.\n\nOrwell's work is characterized by lucid prose, social criticism, and opposition to totalitarianism.",
+      "quotes": "\"In a time of deceit, telling the truth is a revolutionary act.\"\n\n\"War is peace. Freedom is slavery. Ignorance is strength.\"\n\n\"All animals are equal, but some animals are more equal than others.\"\n\n\"The most effective way to destroy people is to deny and obliterate their own understanding of their history.\""
     },
     {
       "id": 3,
       "name": "Gabriel Garcia Marquez",
       "country": "Colombia",
-      "booksLoaded": false,
-      "biography": "Gabriel Garcia Marquez (1927-2014) was a Colombian novelist, short-story writer, and journalist.\n\nHe was awarded the Nobel Prize in Literature in 1982 for his novels and short stories, in which the fantastic and the realistic are combined in a richly composed world of imagination.\n\nHe is considered one of the most significant authors of the 20th century, and his work popularized the literary style known as magical realism."
+      "biography": "Gabriel Garcia Marquez (1927-2014) was a Colombian novelist, short-story writer, and journalist.\n\nHe was awarded the Nobel Prize in Literature in 1982 for his novels and short stories, in which the fantastic and the realistic are combined in a richly composed world of imagination.\n\nHe is considered one of the most significant authors of the 20th century, and his work popularized the literary style known as magical realism.",
+      "quotes": "\"It is not true that people stop pursuing dreams because they grow old, they grow old because they stop pursuing dreams.\"\n\n\"No matter what, nobody can take away the dances you've already had.\"\n\n\"The only regret I will have in dying is if it is not for love.\"\n\n\"Always remember that the most important thing in a good marriage is not happiness, but stability.\""
     }
   ],
   "books": [

@@ -1,8 +1,9 @@
 import { inject, Injectable } from '@angular/core';
-import { map, Observable } from 'rxjs';
-import { NgStore } from '@areaprog/ng-store';
+import { Observable } from 'rxjs';
+import { findStoreValueByKey, NgStore } from '@areaprog/ng-store';
 import { AppStore } from '../models/store.model';
 import { Author, AuthorCreationData } from '../models/author.model';
+import { Book } from '../models/book.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthorService {
@@ -22,6 +23,15 @@ export class AuthorService {
       `/api/authors/${id}`,
       s => s.authors,
       id
+    );
+  }
+
+  public loadBooks(authorId: number): Observable<Book[]> {
+    return this._store.loadEntities<Book, Author>(
+      `/api/authors/${authorId}/books`,
+      s => s.books,
+      findStoreValueByKey(s => s.authors, authorId),
+      'booksLoaded'
     );
   }
 

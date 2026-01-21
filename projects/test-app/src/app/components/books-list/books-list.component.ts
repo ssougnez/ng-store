@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input, InputSignal } from '
 import { ExecuteAction, NgSignalStoreContainerComponent, NgStore, NgStoreTemplateDirective, QueryAction } from '@areaprog/ng-store';
 import { AppStore } from '../../models/store.model';
 import { Book } from '../../models/book.model';
+import { AuthorService } from '../../services/author.service';
 import { BookService } from '../../services/book.service';
 import { AddBookComponent } from '../add-book/add-book.component';
 
@@ -14,13 +15,14 @@ import { AddBookComponent } from '../add-book/add-book.component';
 })
 export class BooksListComponent {
 
+  private readonly _authorService = inject(AuthorService);
   private readonly _bookService = inject(BookService);
   private readonly _store = inject<NgStore<AppStore>>(NgStore);
 
   public readonly authorId: InputSignal<number> = input.required<number>();
 
   protected readonly booksAction = new QueryAction({
-    query: () => this._bookService.loadByAuthorId(this.authorId()),
+    query: () => this._authorService.loadBooks(this.authorId()),
     data: () => this._store.selectValuesByIndex(s => s.books, 'authorId', this.authorId())
   });
 

@@ -1,0 +1,23 @@
+<section class="panel quotes-panel">
+  <h2>Famous Quotes</h2>
+
+  <ngs-container [action]="authorAction"
+                 loaderType="text"
+                 loaderText="Loading quotes...">
+    <ng-container *ngsTemplate="authorAction as author">
+
+      @if (author) {
+        @if (author.quotes; as quotes) {
+          <div class="quotes-content">
+            @for (quote of quotes.split('\n\n'); track $index) {
+              <blockquote>{{ quote }}</blockquote>
+            }
+          </div>
+        } @else {
+          <p class="empty">No quotes available for this author.</p>
+        }
+      }
+
+    </ng-container>
+  </ngs-container>
+</section>
