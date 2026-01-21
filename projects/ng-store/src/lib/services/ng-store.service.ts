@@ -1,7 +1,6 @@
 import { inject, Injectable } from '@angular/core';
-import { filterArray, mapArray } from '../operators';
 import { produce } from 'immer';
-import { BehaviorSubject, catchError, distinctUntilChanged, filter, finalize, map, Observable, of, share, take, tap, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, distinctUntilChanged, finalize, map, Observable, of, share, tap, throwError } from 'rxjs';
 import {
   BaseEntity,
   BooleanProperties,
@@ -14,9 +13,9 @@ import {
   IndexOf,
   LoadableFlags,
   OnlyBoolean,
-  StoreConfiguration,
   StoreEntity
 } from '../models';
+import { filterArray, mapArray } from '../operators';
 import { NG_STORE_CONFIG } from '../tokens';
 
 /**
@@ -516,7 +515,7 @@ export class NgStore<TStore> {
     keys = keys.filter(k => root._entities.has(k));
 
     if (keys.length !== 0) {
-      this.update((draft, state) => {
+      this._update((draft, state) => {
         const snapshotRoot = selector(state);
         const draftRoot = selector(draft);
 
@@ -550,15 +549,6 @@ export class NgStore<TStore> {
         }
       });
     }
-  }
-
-  /** @internal Creates a reactive selector for a part of the store. */
-  private select<T>(selector: (s: TStore) => T): Observable<T> {
-    return this.root
-      .pipe(
-        map(s => selector(s)),
-        distinctUntilChanged()
-      );
   }
 
   /**
@@ -768,86 +758,6 @@ export class NgStore<TStore> {
       )
   }
 
-  /** @internal Updates the store state using Immer's produce function. */
-  private update(updater: (draft: TStore, original: TStore) => void) {
-    const baseState = this.value;
-
-    // DO NOT REMOVE THE BRACKETS FOR THE SECOND PARAMETER AS BECAUSE OF CURRYING IT WOULD MEAN SOMETHING ELSE
-    const nextState = produce(baseState, draft => { updater(draft as TStore, baseState); });
-
-    if (this._isBatching) {
-      this._batchedState = nextState;
-    } else {
-      this._store.next(nextState);
-    }
-  }
-
-  /**
-   * Updates all entities matching a predicate.
-   *
-   * @template T - The entity type
-   * @param root - Selector to locate the Entities collection
-   * @param selector - Predicate to select entities to update
-   * @param updater - Function to update each matching entity
-   *
-   * @example
-   * ```typescript
-   * // Mark all unloaded entities as loading
-   * store.updateEntitiesBy(
-   *   s => s.books,
-   *   e => !e.loaded,
-   *   e => { e.loaded = true; }
-   * );
-   * ```
-   */
-  public updateEntitiesBy<T extends BaseEntity<T['id']>>(
-    root: (s: TStore) => Entities<T>,
-    selector: (item: Entity<T>) => boolean,
-    updater: (item: Entity<T>) => void
-  ) {
-    this.update((d, s) => {
-      const entities = root(s);
-      const ids: T['id'][] = [];
-
-      for (const e of entities._array) {
-        if (selector(e) === true) {
-          ids.push(e.value.id);
-        }
-      }
-
-      for (const id of ids) {
-        this._updateEntityByKey(d, s, root, id, updater);
-      }
-    });
-  }
-
-  /**
-   * Updates an entity by its key.
-   *
-   * @template T - The entity type
-   * @param selector - Selector to locate the Entities collection
-   * @param key - Key of the entity to update
-   * @param updater - Function to update the entity
-   *
-   * @remarks
-   * The entity's `id` property cannot be changed. Attempting to do so will throw an error.
-   *
-   * @example
-   * ```typescript
-   * store.updateEntityByKey(s => s.books, 123, entity => {
-   *   entity.loaded = true;
-   *   entity.value.title = 'New Title';
-   * });
-   * ```
-   */
-  public updateEntityByKey<T extends BaseEntity<T['id']>>(
-    selector: (s: TStore) => Entities<T>,
-    key: T['id'],
-    updater: (item: Entity<T>) => void
-  ) {
-    this.update((d, s) => this._updateEntityByKey(d, s, selector, key, entity => updater(entity)));
-  }
-
   /**
    * Updates a value by its key.
    *
@@ -872,7 +782,7 @@ export class NgStore<TStore> {
     key: T['id'],
     updater: (item: T) => void
   ) {
-    this.update((d, s) => this._updateEntityByKey(d, s, selector, key, entity => updater(entity.value)));
+    this._update((d, s) => this._updateValueByKey(d, s, selector, key, updater));
   }
 
   /**
@@ -898,7 +808,20 @@ export class NgStore<TStore> {
     selector: (item: T) => boolean,
     updater: (item: T) => void
   ) {
-    this.updateEntitiesBy(root, e => selector(e.value), e => updater(e.value));
+    this._update((d, s) => {
+      const entities = root(s);
+      const ids: T['id'][] = [];
+
+      for (const e of entities._array) {
+        if (_isUndefined(e) === false && selector(e.value) === true) {
+          ids.push(e.value.id);
+        }
+      }
+
+      for (const id of ids) {
+        this._updateValueByKey(d, s, root, id, updater);
+      }
+    });
   }
 
   /**
@@ -923,7 +846,7 @@ export class NgStore<TStore> {
     values: T[],
     state?: EntityStateOption
   ) {
-    this.update(d => this._upsertEntities(selector(d), values, state || {}));
+    this._update(d => this._upsertEntities(selector(d), values, state || {}));
   }
 
   /**
@@ -948,7 +871,7 @@ export class NgStore<TStore> {
     value: T,
     state?: EntityStateOption
   ) {
-    this.update(d => this._upsertEntities(selector(d), [value], state || {}));
+    this._update(d => this._upsertEntities(selector(d), [value], state || {}));
   }
 
   /**
@@ -1026,7 +949,7 @@ export class NgStore<TStore> {
         .filter(i => _isUndefined(i.state) || i.state === false || force === true);
 
       if (entities.length !== 0) {
-        this.update(d => {
+        this._update(d => {
           entities.forEach(e => {
             const value = this.findValueByKey(dependentRoot, e.key, d) as (OnlyBoolean<TDependent> | null);
 
@@ -1044,7 +967,7 @@ export class NgStore<TStore> {
           .pipe(
             map(data => data as unknown as T[]),
             tap(data => this.upsertValues(root, data, { loaded: entitiesLoaded })),
-            tap(() => this.update(d => {
+            tap(() => this._update(d => {
               entities.forEach(e => {
                 const value = this.findValueByKey(dependentRoot, e.key, d) as (OnlyBoolean<TDependent> | null);
 
@@ -1054,7 +977,7 @@ export class NgStore<TStore> {
               });
             })),
             catchError(err => {
-              this.update(d => {
+              this._update(d => {
                 entities.forEach(e => {
                   const value = this.findValueByKey(dependentRoot, e.key, d) as (OnlyBoolean<TDependent> | null);
 
@@ -1107,16 +1030,16 @@ export class NgStore<TStore> {
       const state = root(this.value).loaded;
 
       if (state !== true || force === true) {
-        this.update(d => root(d).loaded = null);
+        this._update(d => root(d).loaded = null);
 
         return this._getLoadQuery<(T | TData) | (T | TData)[]>(url)
           .pipe(
             map(data => Array.isArray(data) ? data : [data]),
             map((data: (T | TData)[]) => data as T[]),
             tap(data => this.upsertValues(root, data, { loaded: entitiesLoaded })),
-            tap(() => this.update(d => { root(d).loaded = true; })),
+            tap(() => this._update(d => { root(d).loaded = true; })),
             catchError(err => {
-              this.update(d => { root(d).loaded = state; });
+              this._update(d => { root(d).loaded = state; });
 
               return throwError(() => new Error(err));
             }),
@@ -1223,7 +1146,7 @@ export class NgStore<TStore> {
       const state = dependentEntity[stateProperty];
 
       if (state !== true || force === true) {
-        this.update(d => {
+        this._update(d => {
           (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = null;
         });
 
@@ -1232,9 +1155,9 @@ export class NgStore<TStore> {
             map(data => Array.isArray(data) ? data : [data]),
             map((data: (T | TData)[]) => data as T[]),
             tap(data => this.upsertValues(root, data, { loaded: entitiesLoaded })),
-            tap(() => dependentRoot && this.update(d => { (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = true; })),
+            tap(() => dependentRoot && this._update(d => { (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = true; })),
             catchError(err => {
-              dependentRoot && this.update(d => { (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = state; });
+              dependentRoot && this._update(d => { (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = state; });
 
               return throwError(() => new Error(err));
             }),
@@ -1272,7 +1195,7 @@ export class NgStore<TStore> {
       const state = dependentRoot(this.value)[stateProperty];
 
       if (state !== true || force === true) {
-        this.update(d => {
+        this._update(d => {
           (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = null;
         });
 
@@ -1280,9 +1203,9 @@ export class NgStore<TStore> {
           .pipe(
             map((data: T | TData) => data as T),
             tap((data: T) => this.upsertValue(root, data, { loaded: entityLoaded })),
-            tap(() => dependentRoot && this.update(d => { dependentRoot(d)[stateProperty] = true as any; })),
+            tap(() => dependentRoot && this._update(d => { dependentRoot(d)[stateProperty] = true as any; })),
             catchError(err => {
-              this.update(d => { (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = state; });
+              this._update(d => { (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = state; });
 
               return throwError(() => new Error(err));
             }),
@@ -1475,7 +1398,7 @@ export class NgStore<TStore> {
   public rebuildIndices<T extends BaseEntity<T['id']>>(
     root: (s: TStore) => Entities<T>
   ): void {
-    this.update((store: TStore) => {
+    this._update((store: TStore) => {
       const entities = root(store);
 
       for (const index of entities._indiceNames) {
@@ -1536,7 +1459,7 @@ export class NgStore<TStore> {
       return 0;
     }
 
-    this.update((store: TStore) => {
+    this._update((store: TStore) => {
       const entities = root(store);
 
       // Rebuild array without holes
@@ -1612,13 +1535,13 @@ export class NgStore<TStore> {
     Object.assign(root, state || {});
   }
 
-  /** @internal Updates an entity by key within an Immer draft */
-  private _updateEntityByKey<T extends BaseEntity<T['id']>>(
+  /** @internal Updates a value by key within an Immer draft */
+  private _updateValueByKey<T extends BaseEntity<T['id']>>(
     draft: TStore,
     snapshot: TStore,
     selector: (s: TStore) => Entities<T>,
     key: T['id'],
-    updater: (entity: Entity<T>) => void
+    updater: (value: T) => void
   ) {
     const snapshotRoot = selector(snapshot);
     const draftRoot = selector(draft);
@@ -1628,27 +1551,35 @@ export class NgStore<TStore> {
       const entity = draftRoot._array[position];
 
       if (entity) {
-        for (const index of snapshotRoot._indiceNames) {
-          const value = (entity.value as Record<string, unknown>)[index];
-          const array = (draftRoot._indices[index].get(value) || []).filter(p => p !== position);
+        const oldIndexValues = new Map<string, unknown>();
 
-          draftRoot._indices[index].set(value, array);
+        for (const index of snapshotRoot._indiceNames) {
+          oldIndexValues.set(index, (entity.value as Record<string, unknown>)[index]);
         }
 
-        updater(entity);
+        updater(entity.value);
 
         if (entity.value.id !== key) {
           throw new Error(`Changing entity id is not allowed. Original id: ${key}, new id: ${entity.value.id}. Use removeEntitiesByKeys() and upsertValue() instead.`);
         }
 
         for (const index of snapshotRoot._indiceNames) {
-          const value = (entity.value as Record<string, unknown>)[index];
+          const oldValue = oldIndexValues.get(index);
+          const newValue = (entity.value as Record<string, unknown>)[index];
 
-          if (draftRoot._indices[index].has(value)) {
-            draftRoot._indices[index].get(value)!.push(position);
-          }
-          else {
-            draftRoot._indices[index].set(value, [position]);
+          if (oldValue !== newValue) {
+            const oldArray = (draftRoot._indices[index].get(oldValue) ?? []).filter(p => p !== position);
+            if (oldArray.length === 0) {
+              draftRoot._indices[index].delete(oldValue);
+            } else {
+              draftRoot._indices[index].set(oldValue, oldArray);
+            }
+
+            if (draftRoot._indices[index].has(newValue)) {
+              draftRoot._indices[index].get(newValue)!.push(position);
+            } else {
+              draftRoot._indices[index].set(newValue, [position]);
+            }
           }
         }
       }
@@ -1769,11 +1700,11 @@ export class NgStore<TStore> {
           .pipe(
             map(data => data as T),
             tap(data => this.upsertValue(root, data, { loaded: entityLoaded })),
-            tap(data => this.update(d => this._setEntityStates(d, root, data.id, entityLoaded))),
+            tap(data => this._update(d => this._setEntityStates(d, root, data.id, entityLoaded))),
             tap(() => hasFailed = false),
             finalize(() => {
               if (hasFailed && entity?.value?.id) {
-                this.update(d => this._setEntityStates(d, root, entity.value.id, false));
+                this._update(d => this._setEntityStates(d, root, entity.value.id, false));
               }
               this._removeLoadQuery(url);
             })
@@ -1806,6 +1737,29 @@ export class NgStore<TStore> {
 
     if (entity && loaded !== null) {
       entity.loaded = loaded;
+    }
+  }
+
+  /** @internal Creates a reactive selector for a part of the store. */
+  private select<T>(selector: (s: TStore) => T): Observable<T> {
+    return this.root
+      .pipe(
+        map(s => selector(s)),
+        distinctUntilChanged()
+      );
+  }
+
+  /** @internal Updates the store state using Immer's produce function. */
+  private _update(updater: (draft: TStore, original: TStore) => void) {
+    const baseState = this.value;
+
+    // DO NOT REMOVE THE BRACKETS FOR THE SECOND PARAMETER AS BECAUSE OF CURRYING IT WOULD MEAN SOMETHING ELSE
+    const nextState = produce(baseState, draft => { updater(draft as TStore, baseState); });
+
+    if (this._isBatching) {
+      this._batchedState = nextState;
+    } else {
+      this._store.next(nextState);
     }
   }
 
