@@ -8,9 +8,9 @@
     "build:test": "ng build test-app",
     "watch:lib": "ng build ng-store --watch",
     "serve:test": "ng serve test-app",
-    "server": "json-server --watch db.json --port 3000 --delay 500",
+    "server": "json-server --watch db.json --port 3000 --delay 1500",
     "db:reset": "shx cp db.template.json db.json",
-    "dev": "npm run db:reset && concurrently -k -n lib,app,api -c blue,green,yellow \"ng build ng-store --watch\" \"wait-on -d 5000 dist/ng-store/fesm2022/areaprog-ng-store.mjs && ng serve test-app\" \"json-server --watch db.json --port 3000 --delay 500\"",
+    "dev": "npm run db:reset && concurrently -k -n lib,app,api -c blue,green,yellow \"ng build ng-store --watch\" \"wait-on -d 5000 dist/ng-store/fesm2022/areaprog-ng-store.mjs && ng serve test-app\" \"json-server --watch db.json --port 3000 --delay 1500\"",
     "package": "ng build ng-store && cd dist/ng-store && npm pack"
   },
   "private": true,

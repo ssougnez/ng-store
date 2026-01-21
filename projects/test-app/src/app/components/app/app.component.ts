@@ -3,10 +3,11 @@ import { RouterOutlet } from '@angular/router';
 import { AuthorsListComponent } from '../authors-list/authors-list.component';
 import { AuthorBiographyComponent } from '../author-biography/author-biography.component';
 import { BooksListComponent } from '../books-list/books-list.component';
+import { ExecutingQueriesComponent } from '../executing-queries/executing-queries.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, AuthorsListComponent, AuthorBiographyComponent, BooksListComponent],
+  imports: [RouterOutlet, AuthorsListComponent, AuthorBiographyComponent, BooksListComponent, ExecutingQueriesComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })

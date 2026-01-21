@@ -1,0 +1,16 @@
+<section class="panel queries-panel">
+  <h2>Executing Queries</h2>
+
+  @if (executingQueries().size > 0) {
+    <ul class="query-list">
+      @for (query of executingQueries(); track query) {
+        <li class="query-item">
+          <span class="spinner"></span>
+          <code>{{ query }}</code>
+        </li>
+      }
+    </ul>
+  } @else {
+    <p class="empty">No queries currently executing.</p>
+  }
+</section>

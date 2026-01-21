@@ -175,6 +175,7 @@ export class NgStore<TStore> {
   private _executedQueries: Set<string> = new Set<string>();
   private _executedQueriesSubject: BehaviorSubject<Set<string>> = new BehaviorSubject<Set<string>>(this._executedQueries);
   private _executingQueries: Map<string, Observable<any>> = new Map<string, Observable<any>>();
+  private _executingQueriesSubject: BehaviorSubject<Set<string>> = new BehaviorSubject<Set<string>>(new Set<string>());
   private _http = inject(this._config.httpClientType);
   private _isBatching: boolean = false;
   private _root: Observable<TStore>;
@@ -182,6 +183,9 @@ export class NgStore<TStore> {
 
   /** Observable emitting the set of executed query URLs. Useful for tracking which data has been loaded. */
   public readonly executedQueries$: Observable<Set<string>> = this._executedQueriesSubject.asObservable();
+
+  /** Observable emitting the set of currently executing query URLs. Useful for displaying loading indicators. */
+  public readonly executingQueries$: Observable<Set<string>> = this._executingQueriesSubject.asObservable();
 
   /********************************************************************** ACCESSORS **********************************************************************/
 
@@ -1653,12 +1657,14 @@ export class NgStore<TStore> {
 
   /** @internal Gets or creates a shared HTTP query observable */
   private _getLoadQuery<T>(data: string | ExternalCall<T>): Observable<T> {
-    let query = this._executingQueries.get(typeof data == 'string' ? data : data.key);
+    const key = typeof data == 'string' ? data : data.key;
+    let query = this._executingQueries.get(key);
 
     if (!query) {
       query = typeof data == 'string' ? this._http.get<T>(data).pipe(share()) : data.observable.pipe(share());
 
-      this._executingQueries.set(typeof data == 'string' ? data : data.key, query);
+      this._executingQueries.set(key, query);
+      this._executingQueriesSubject.next(new Set(this._executingQueries.keys()));
     }
 
     return query;
@@ -1715,6 +1721,7 @@ export class NgStore<TStore> {
   /** @internal Removes a query from the executing queries cache */
   private _removeLoadQuery(data: string | ExternalCall<unknown>) {
     this._executingQueries.delete(typeof data == 'string' ? data : data.key);
+    this._executingQueriesSubject.next(new Set(this._executingQueries.keys()));
   }
 
   /** @internal Sets entity loaded states */
