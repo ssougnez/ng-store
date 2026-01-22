@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { produce } from 'immer';
-import { BehaviorSubject, catchError, distinctUntilChanged, finalize, map, Observable, of, share, tap, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, defer, distinctUntilChanged, finalize, map, Observable, of, share, tap, throwError } from 'rxjs';
 import {
   BaseEntity,
   BooleanProperties,
@@ -904,10 +904,8 @@ export class NgStore<TStore> {
     root: (s: TStore) => Entities<T>,
     key: T['id']
   ): Observable<TReturn> {
-    return this._innerFrom(() => {
-      const entity = this._findEntityByKey(root, key);
-
-      if (entity === null) {
+    return defer(() => {
+      if (root(this.value)._entities.has(key) === false) {
         return throwError(() => 'The entity was not found in the store');
       }
 
@@ -946,7 +944,7 @@ export class NgStore<TStore> {
     entitiesLoaded: boolean = true,
     force: boolean = false
   ): Observable<T[]> {
-    return this._innerFrom(() => {
+    return defer(() => {
       const entities = dependentKeys
         .map(k => ({ key: k, state: ((this.findValueByKey(dependentRoot, k) || {}) as OnlyBoolean<TDependent>)[stateProperty] }))
         .filter(i => _isUndefined(i.state) || i.state === false || force === true);
@@ -1029,7 +1027,7 @@ export class NgStore<TStore> {
     entitiesLoaded: boolean = true,
     force: boolean = false
   ): Observable<T[]> {
-    return this._innerFrom(() => {
+    return defer(() => {
       const state = root(this.value).loaded;
 
       if (state !== true || force === true) {
@@ -1087,7 +1085,7 @@ export class NgStore<TStore> {
     entitiesLoaded: boolean = true,
     force: boolean = false
   ): Observable<T[]> {
-    return this._innerFrom(() => {
+    return defer(() => {
       if (this._executedQueries.has(url) === false || force === true) {
         return this._getLoadQuery<(T | TData) | (T | TData)[]>(url)
           .pipe(
@@ -1139,7 +1137,7 @@ export class NgStore<TStore> {
     entitiesLoaded: boolean = true,
     force: boolean = false
   ): Observable<T[]> {
-    return this._innerFrom(() => {
+    return defer(() => {
       const dependentEntity = dependentRoot(this.value) as OnlyBoolean<TDependent>;
 
       if (dependentEntity === null) {
@@ -1194,7 +1192,7 @@ export class NgStore<TStore> {
     entityLoaded: boolean = true,
     force: boolean = false
   ): Observable<T | null> {
-    return this._innerFrom(() => {
+    return defer(() => {
       const state = dependentRoot(this.value)[stateProperty];
 
       if (state !== true || force === true) {
@@ -1309,7 +1307,7 @@ export class NgStore<TStore> {
     root: (s: TStore) => Entities<T>,
     data: unknown
   ): Observable<TResult> {
-    return this._innerFrom(() => {
+    return defer(() => {
       const autoInsert = this._config.automaticPost !== false;
 
       return this._http
@@ -1338,7 +1336,7 @@ export class NgStore<TStore> {
     root: (s: TStore) => Entities<T>,
     data: BaseEntity<T['id']>[]
   ): Observable<TResult[]> {
-    return this._innerFrom(() => {
+    return defer(() => {
       const autoInsert = this._config.automaticPut !== false;
 
       return this._http
@@ -1377,7 +1375,7 @@ export class NgStore<TStore> {
     key: T['id'] | null,
     data: unknown
   ): Observable<TResult> {
-    return this._innerFrom(() => {
+    return defer(() => {
       const autoInsert = this._config.automaticPut !== false;
 
       return this._http
@@ -1668,21 +1666,6 @@ export class NgStore<TStore> {
     return query;
   }
 
-  /** @internal Wraps an observable factory for lazy execution */
-  private _innerFrom<T>(inner: () => Observable<T>): Observable<T> {
-    return new Observable<T>(observer => {
-      const s = inner().subscribe({
-        next: x => observer.next(x),
-        error: err => observer.error(err),
-        complete: () => observer.complete()
-      });
-
-      return {
-        unsubscribe: () => s.unsubscribe()
-      }
-    })
-  }
-
   /** @internal Loads a single entity by key or predicate */
   private _loadEntity<T extends BaseEntity<T['id']>, TData extends BaseEntity<TData['id']> = T>(
     url: string | ExternalCall<(T | TData)>,
@@ -1691,7 +1674,7 @@ export class NgStore<TStore> {
     entityLoaded: boolean = true,
     force: boolean = false
   ): Observable<T> {
-    return this._innerFrom(() => {
+    return defer(() => {
       let hasFailed = true;
       const entity = typeof selector === 'function' ? this._findEntityBy(root, entity => (selector as ((entity: T) => boolean))(entity.value)) : this._findEntityByKey(root, selector as T['id']);
       const state = entity ? entity.loaded : false;

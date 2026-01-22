@@ -24,7 +24,7 @@ ng test ng-store
 ### Core Concepts
 
 **Entities and Collections**: The store manages data in two primary structures:
-- `Entity<T>`: Wraps a single value with state flags (`loading`, `loaded`, `busy`, `deleting`, `updating`)
+- `Entity<T>`: Wraps a single value with a `loaded` flag
 - `Entities<T>`: A collection of entities with internal indexing via `_entities` (Map), `_array`, and `_indices`
 
 **Sparse Arrays**: The store uses sparse arrays when deleting entities (creates holes instead of compacting). This is an Immer optimization that avoids marking all entities as changed.
@@ -65,7 +65,7 @@ store.update((draft, original) => {
 
 ### HTTP Integration
 
-The store expects an HTTP client implementing `IHttpClient` interface (get, post, put, delete methods). Built-in methods like `loadAllEntities`, `postEntity`, `putEntityByKey`, `deleteEntityByKey` manage loading/busy states automatically.
+The store expects an HTTP client implementing `IHttpClient` interface (get, post, put, delete methods). The `load*` methods manage loading states automatically. The mutation methods (`postEntity`, `putEntityByKey`, `deleteEntityByKey`) perform HTTP calls and update the store on success, but do not manage intermediate states.
 
 ## Dependencies
 
