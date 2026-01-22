@@ -56,3 +56,21 @@ h2 {
   background: #f8f9fa;
   border-radius: 4px;
 }
+
+.badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.badge-get {
+  background: #d4edda;
+  color: #155724;
+}
+
+.badge-delete {
+  background: #f8d7da;
+  color: #721c24;
+}

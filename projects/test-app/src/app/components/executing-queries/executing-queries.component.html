@@ -1,11 +1,19 @@
 <section class="panel queries-panel">
   <h2>Executing Queries</h2>
 
-  @if (executingQueries().size > 0) {
+  @if (hasQueries()) {
     <ul class="query-list">
-      @for (query of executingQueries(); track query) {
+      @for (query of executingGetQueries(); track query) {
         <li class="query-item">
           <span class="spinner"></span>
+          <span class="badge badge-get">GET</span>
+          <code>{{ query }}</code>
+        </li>
+      }
+      @for (query of executingDeleteQueries(); track query) {
+        <li class="query-item">
+          <span class="spinner"></span>
+          <span class="badge badge-delete">DELETE</span>
           <code>{{ query }}</code>
         </li>
       }

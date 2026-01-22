@@ -1120,38 +1120,69 @@ export class NgStore<TStore> {
    *
    * @template T - The entity type to load
    * @template TDependent - The dependent object type containing the state property
-   * @template TData - The HTTP response data type
    * @param url - URL to fetch from
    * @param root - Selector for the collection to populate
    * @param dependentRoot - Selector for the object containing the state property
    * @param stateProperty - Boolean property name tracking the load state
    * @param entityLoaded - Whether the loaded entity is considered fully loaded (default: true)
    * @param force - Bypass the loaded check (default: false)
-   * @returns Observable of the loaded entity or null
+   * @returns Observable of the loaded entity, or null if already loaded
+   *
+   * @remarks
+   * - Tracks loading state on a dependent entity (e.g., `author.biographyLoaded`)
+   * - On error, restores previous state, allowing retry
+   * - Concurrent calls share the same HTTP request
+   *
+   * @example
+   * ```typescript
+   * store.loadEntity(
+   *   `/api/authors/${authorId}/biography`,
+   *   s => s.biographies,
+   *   s => s.authors._array.find(a => a.value.id === authorId)?.value,
+   *   'biographyLoaded'
+   * ).subscribe();
+   * ```
    */
-  public loadEntity<T extends BaseEntity<T['id']>, TDependent extends LoadableFlags, TData extends BaseEntity<TData['id']> = T>(
+  public loadEntity<T extends BaseEntity<T['id']>, TDependent extends LoadableFlags>(
     url: string,
     root: (s: TStore) => Entities<T>,
-    dependentRoot: (s: TStore) => TDependent,
+    dependentRoot: (s: TStore) => TDependent | null,
     stateProperty: BooleanProperties<TDependent>,
     entityLoaded: boolean = true,
     force: boolean = false
   ): Observable<T | null> {
     return defer(() => {
-      const state = dependentRoot(this.value)[stateProperty];
+      const dependentEntity = dependentRoot(this.value) as OnlyBoolean<TDependent>;
+
+      if (dependentEntity === null) {
+        throw new Error('The dependent entity could not be found!');
+      }
+
+      const state = dependentEntity[stateProperty];
 
       if (state !== true || force === true) {
-        this._update(d => {
-          (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = null;
-        });
+        if (state === false) {
+          this._update(d => {
+            (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = null;
+          });
+        }
 
-        return this._getQuery<T | TData>('GET', url)
+        return this._getQuery<T>('GET', url)
           .pipe(
-            map((data: T | TData) => data as T),
             tap((data: T) => this.upsertValue(root, data, entityLoaded)),
-            tap(() => dependentRoot && this._update(d => { dependentRoot(d)[stateProperty] = true as any; })),
+            tap(() => this._update(d => {
+              const dependent = dependentRoot(d) as OnlyBoolean<TDependent> | null;
+              if (dependent) {
+                dependent[stateProperty] = true;
+              }
+            })),
             catchError(err => {
-              this._update(d => { (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = state; });
+              this._update(d => {
+                const dependent = dependentRoot(d) as OnlyBoolean<TDependent> | null;
+                if (dependent) {
+                  dependent[stateProperty] = state;
+                }
+              });
 
               return throwError(() => new Error(err));
             }),
