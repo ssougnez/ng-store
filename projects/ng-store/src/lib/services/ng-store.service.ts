@@ -1037,14 +1037,18 @@ export class NgStore<TStore> {
    *
    * @template T - The entity type to load
    * @template TDependent - The dependent object type containing the state property
-   * @template TData - The HTTP response data type
    * @param url - URL to fetch from
    * @param root - Selector for the collection to populate
    * @param dependentRoot - Selector for the object containing the state property
    * @param stateProperty - Boolean property name tracking the load state
    * @param entitiesLoaded - Whether loaded entities are considered fully loaded (default: true)
    * @param force - Bypass the loaded check (default: false)
-   * @returns Observable of loaded entities
+   * @returns Observable of loaded entities, or empty array if already loaded
+   *
+   * @remarks
+   * - Tracks loading state on a dependent entity (e.g., `author.booksLoaded`)
+   * - On error, restores previous state, allowing retry
+   * - Concurrent calls share the same HTTP request
    *
    * @example
    * ```typescript
@@ -1057,7 +1061,7 @@ export class NgStore<TStore> {
    * ).subscribe();
    * ```
    */
-  public loadEntities<T extends BaseEntity<T['id']>, TDependent extends { [K in keyof OnlyBoolean<TDependent>]?: boolean }, TData extends BaseEntity<TData['id']> = T>(
+  public loadEntities<T extends BaseEntity<T['id']>, TDependent extends { [K in keyof OnlyBoolean<TDependent>]?: boolean }>(
     url: string,
     root: (s: TStore) => Entities<T>,
     dependentRoot: (s: TStore) => TDependent | null,
@@ -1075,18 +1079,31 @@ export class NgStore<TStore> {
       const state = dependentEntity[stateProperty];
 
       if (state !== true || force === true) {
-        this._update(d => {
-          (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = null;
-        });
+        if (state === false) {
+          this._update(d => {
+            (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = null;
+          });
+        }
 
-        return this._getQuery<(T | TData) | (T | TData)[]>('GET', url)
+        return this._getQuery<T | T[]>('GET', url)
           .pipe(
             map(data => Array.isArray(data) ? data : [data]),
-            map((data: (T | TData)[]) => data as T[]),
             tap(data => this.upsertValues(root, data, entitiesLoaded)),
-            tap(() => dependentRoot && this._update(d => { (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = true; })),
+            tap(() => this._update(d => {
+              const dependent = dependentRoot(d) as OnlyBoolean<TDependent> | null;
+
+              if (dependent) {
+                dependent[stateProperty] = true;
+              }
+            })),
             catchError(err => {
-              dependentRoot && this._update(d => { (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = state; });
+              this._update(d => {
+                const dependent = dependentRoot(d) as OnlyBoolean<TDependent> | null;
+                
+                if (dependent) {
+                  dependent[stateProperty] = state;
+                }
+              });
 
               return throwError(() => new Error(err));
             }),
