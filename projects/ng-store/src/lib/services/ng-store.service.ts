@@ -1602,8 +1602,6 @@ export class NgStore<TStore> {
       const existing = position === undefined ? null : root._array[position];
 
       if (existing) {
-        const position = root._entities.get(value.id)!;
-
         for (const index of root._indiceNames) {
           const valueAsRecord = value as Record<string, unknown>;
           const existingAsRecord = existing.value as Record<string, unknown>;
@@ -1618,7 +1616,7 @@ export class NgStore<TStore> {
               map.set(oldValue, (map.get(oldValue) || []).filter(p => p !== position));
             }
 
-            map.set(newValue, (map.get(newValue) ?? []).concat(position));
+            map.set(newValue, (map.get(newValue) ?? []).concat(position!));
           }
         }
 
@@ -1642,7 +1640,7 @@ export class NgStore<TStore> {
             const map = root._indices[index];
 
             if (map.has(indexValue)) {
-              (map.get(indexValue) ?? []).push(position);
+              map.set(indexValue, map.get(indexValue)!.concat(position));
             }
             else {
               map.set(indexValue, [position]);
