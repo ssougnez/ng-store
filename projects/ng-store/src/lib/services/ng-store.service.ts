@@ -983,16 +983,19 @@ export class NgStore<TStore> {
    * Unlike loadAllEntities, this tracks by URL rather than collection.loaded.
    *
    * @template T - The entity type
-   * @template TData - The HTTP response data type
    * @param url - URL to fetch from
    * @param root - Selector to locate the Entities collection
    * @param entitiesLoaded - Whether loaded entities are considered fully loaded (default: true)
    * @param force - Bypass the URL check (default: false)
-   * @returns Observable of loaded entities
+   * @returns Observable of loaded entities, or empty array if already executed
    *
    * @remarks
-   * Use this when you want to load data once per URL, regardless of collection state.
-   * The URL is tracked in `executedQueries$`.
+   * - Use this when you want to load data once per URL, regardless of collection state
+   * - The URL is tracked in `executedQueries$`
+   * - Returns `[]` when already executed (unlike `loadAllEntities` which returns store values)
+   *   because the API response is unpredictable (e.g., `/api/books/featured`)
+   * - On error, the URL is not marked as executed, allowing retry
+   * - Concurrent calls share the same HTTP request
    *
    * @example
    * ```typescript
@@ -1003,7 +1006,7 @@ export class NgStore<TStore> {
    * store.isQueryExecuted('/api/books/featured').subscribe(loaded => { ... });
    * ```
    */
-  public loadEntitiesOnce<T extends BaseEntity<T['id']>, TData extends BaseEntity<TData['id']> = T>(
+  public loadEntitiesOnce<T extends BaseEntity<T['id']>>(
     url: string,
     root: (s: TStore) => Entities<T>,
     entitiesLoaded: boolean = true,
@@ -1011,14 +1014,15 @@ export class NgStore<TStore> {
   ): Observable<T[]> {
     return defer(() => {
       if (this._executedQueries.has(url) === false || force === true) {
-        return this._getQuery<(T | TData) | (T | TData)[]>('GET', url)
+        return this._getQuery<T | T[]>('GET', url)
           .pipe(
             map(data => Array.isArray(data) ? data : [data]),
-            map((data: (T | TData)[]) => data as T[]),
             tap(data => this.upsertValues(root, data, entitiesLoaded)),
             tap(() => {
-              this._executedQueries.add(url);
-              this._executedQueriesSubject.next(this._executedQueries);
+              if (!this._executedQueries.has(url)) {
+                this._executedQueries.add(url);
+                this._executedQueriesSubject.next(this._executedQueries);
+              }
             }),
             finalize(() => this._removeQuery('GET', url))
           )
