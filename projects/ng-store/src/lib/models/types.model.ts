@@ -174,10 +174,3 @@ export interface IHttpClient {
   put<TResponse, TBody = unknown>(url: string, data: TBody): Observable<TResponse>;
 }
 
-/**
- * Represents an external call configuration for custom data fetching
- */
-export type ExternalCall<T> = {
-  key: string;
-  observable: Observable<T>;
-}

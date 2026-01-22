@@ -1,13 +1,12 @@
 import { inject, Injectable } from '@angular/core';
 import { produce } from 'immer';
-import { BehaviorSubject, catchError, defer, distinctUntilChanged, finalize, map, Observable, of, share, tap, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, defer, distinctUntilChanged, finalize, map, Observable, of, shareReplay, tap, throwError } from 'rxjs';
 import {
   BaseEntity,
   BooleanProperties,
   Entities,
   Entity,
   EntityOf,
-  ExternalCall,
   IHttpClient,
   IndexOf,
   LoadableFlags,
@@ -174,8 +173,10 @@ export class NgStore<TStore> {
   private _config = inject(NG_STORE_CONFIG);
   private _executedQueries: Set<string> = new Set<string>();
   private _executedQueriesSubject: BehaviorSubject<Set<string>> = new BehaviorSubject<Set<string>>(this._executedQueries);
-  private _executingQueries: Map<string, Observable<any>> = new Map<string, Observable<any>>();
-  private _executingQueriesSubject: BehaviorSubject<Set<string>> = new BehaviorSubject<Set<string>>(new Set<string>());
+  private _executingQueries = {
+    DELETE: { map: new Map<string, Observable<any>>(), subject: new BehaviorSubject<Set<string>>(new Set<string>()) },
+    GET: { map: new Map<string, Observable<any>>(), subject: new BehaviorSubject<Set<string>>(new Set<string>()) }
+  };
   private _http = inject(this._config.httpClientType);
   private _isBatching: boolean = false;
   private _root: Observable<TStore>;
@@ -184,8 +185,11 @@ export class NgStore<TStore> {
   /** Observable emitting the set of executed query URLs. Useful for tracking which data has been loaded. */
   public readonly executedQueries$: Observable<Set<string>> = this._executedQueriesSubject.asObservable();
 
-  /** Observable emitting the set of currently executing query URLs. Useful for displaying loading indicators. */
-  public readonly executingQueries$: Observable<Set<string>> = this._executingQueriesSubject.asObservable();
+  /** Observable emitting the set of currently executing DELETE query URLs. Useful for displaying loading indicators. */
+  public readonly executingDeleteQueries$: Observable<Set<string>> = this._executingQueries.DELETE.subject.asObservable();
+
+  /** Observable emitting the set of currently executing GET query URLs. Useful for displaying loading indicators. */
+  public readonly executingQueries$: Observable<Set<string>> = this._executingQueries.GET.subject.asObservable();
 
   /********************************************************************** ACCESSORS **********************************************************************/
 
@@ -911,90 +915,11 @@ export class NgStore<TStore> {
 
       const autoDelete = this._config.automaticDelete !== false;
 
-      return this._http
-        .delete<TReturn>(url)
+      return this._getQuery<TReturn>('DELETE', url)
         .pipe(
-          tap(() => autoDelete && this.removeEntitiesByKeys(root, key))
+          tap(() => autoDelete && this.removeEntitiesByKeys(root, key)),
+          finalize(() => this._removeQuery('DELETE', url))
         );
-    });
-  }
-
-  /**
-   * Loads multiple entities based on dependent entity keys.
-   * Useful for loading related data based on foreign keys.
-   *
-   * @template T - The entity type to load
-   * @template TDependent - The dependent entity type
-   * @template TData - The HTTP response data type
-   * @param url - Base URL (ids will be appended as query params)
-   * @param root - Selector for the collection to populate
-   * @param dependentRoot - Selector for the dependent collection
-   * @param dependentKeys - Keys of dependent entities to load data for
-   * @param stateProperty - Boolean property on dependent entity tracking load state
-   * @param entitiesLoaded - Whether loaded entities are considered fully loaded (default: true)
-   * @param force - Bypass the loaded check (default: false)
-   * @returns Observable of loaded entities
-   */
-  public loadBatchEntities<T extends BaseEntity<T['id']>, TDependent extends BaseEntity<TDependent['id']>, TData extends BaseEntity<TData['id']> = T>(
-    url: string,
-    root: (s: TStore) => Entities<T>,
-    dependentRoot: (s: TStore) => Entities<TDependent>,
-    dependentKeys: TDependent['id'][],
-    stateProperty: BooleanProperties<TDependent>,
-    entitiesLoaded: boolean = true,
-    force: boolean = false
-  ): Observable<T[]> {
-    return defer(() => {
-      const entities = dependentKeys
-        .map(k => ({ key: k, state: ((this.findValueByKey(dependentRoot, k) || {}) as OnlyBoolean<TDependent>)[stateProperty] }))
-        .filter(i => _isUndefined(i.state) || i.state === false || force === true);
-
-      if (entities.length !== 0) {
-        this._update(d => {
-          entities.forEach(e => {
-            const value = this.findValueByKey(dependentRoot, e.key, d) as (OnlyBoolean<TDependent> | null);
-
-            if (value !== null) {
-              value[stateProperty] = null;
-            }
-          });
-        });
-
-        url = url.endsWith('/') === false ? `${url}/?ids=${entities.map(e => e.key).join('&ids=')}` : `${url}/?ids=${entities.map(e => e.key).join('&ids=')}`;
-
-        const query = this._getLoadQuery<TData[]>(url);
-
-        return query
-          .pipe(
-            map(data => data as unknown as T[]),
-            tap(data => this.upsertValues(root, data, entitiesLoaded)),
-            tap(() => this._update(d => {
-              entities.forEach(e => {
-                const value = this.findValueByKey(dependentRoot, e.key, d) as (OnlyBoolean<TDependent> | null);
-
-                if (value !== null) {
-                  value[stateProperty] = true;
-                }
-              });
-            })),
-            catchError(err => {
-              this._update(d => {
-                entities.forEach(e => {
-                  const value = this.findValueByKey(dependentRoot, e.key, d) as (OnlyBoolean<TDependent> | null);
-
-                  if (value !== null) {
-                    value[stateProperty] = e.state;
-                  }
-                });
-              });
-
-              return throwError(() => new Error(err));
-            }),
-            finalize(() => this._removeLoadQuery(url))
-          )
-      }
-
-      return of([]);
     });
   }
 
@@ -1002,8 +927,7 @@ export class NgStore<TStore> {
    * Loads all entities from an HTTP endpoint into the collection.
    *
    * @template T - The entity type
-   * @template TData - The HTTP response data type
-   * @param url - URL to fetch from, or an ExternalCall configuration
+   * @param url - URL to fetch from
    * @param root - Selector to locate the Entities collection
    * @param entitiesLoaded - Whether loaded entities are considered fully loaded (default: true)
    * @param force - Bypass the loaded check (default: false)
@@ -1013,6 +937,7 @@ export class NgStore<TStore> {
    * - Sets `collection.loaded = null` while loading, then `true` on success
    * - On error, restores previous loaded state
    * - Skips HTTP call if already loaded (unless `force: true`)
+   * - Concurrent calls share the same HTTP request
    *
    * @example
    * ```typescript
@@ -1021,8 +946,8 @@ export class NgStore<TStore> {
    * });
    * ```
    */
-  public loadAllEntities<T extends BaseEntity<T['id']>, TData extends BaseEntity<TData['id']> = T>(
-    url: string | ExternalCall<(T | TData)[]>,
+  public loadAllEntities<T extends BaseEntity<T['id']>>(
+    url: string,
     root: (s: TStore) => Entities<T>,
     entitiesLoaded: boolean = true,
     force: boolean = false
@@ -1031,12 +956,13 @@ export class NgStore<TStore> {
       const state = root(this.value).loaded;
 
       if (state !== true || force === true) {
-        this._update(d => root(d).loaded = null);
+        if (state === false) {
+          this._update(d => root(d).loaded = null);
+        }
 
-        return this._getLoadQuery<(T | TData) | (T | TData)[]>(url)
+        return this._getQuery<T | T[]>('GET', url)
           .pipe(
             map(data => Array.isArray(data) ? data : [data]),
-            map((data: (T | TData)[]) => data as T[]),
             tap(data => this.upsertValues(root, data, entitiesLoaded)),
             tap(() => this._update(d => { root(d).loaded = true; })),
             catchError(err => {
@@ -1044,9 +970,7 @@ export class NgStore<TStore> {
 
               return throwError(() => new Error(err));
             }),
-            finalize(() => {
-              this._removeLoadQuery(url);
-            })
+            finalize(() => this._removeQuery('GET', url))
           );
       }
 
@@ -1087,7 +1011,7 @@ export class NgStore<TStore> {
   ): Observable<T[]> {
     return defer(() => {
       if (this._executedQueries.has(url) === false || force === true) {
-        return this._getLoadQuery<(T | TData) | (T | TData)[]>(url)
+        return this._getQuery<(T | TData) | (T | TData)[]>('GET', url)
           .pipe(
             map(data => Array.isArray(data) ? data : [data]),
             map((data: (T | TData)[]) => data as T[]),
@@ -1096,7 +1020,7 @@ export class NgStore<TStore> {
               this._executedQueries.add(url);
               this._executedQueriesSubject.next(this._executedQueries);
             }),
-            finalize(() => this._removeLoadQuery(url))
+            finalize(() => this._removeQuery('GET', url))
           )
       }
 
@@ -1110,7 +1034,7 @@ export class NgStore<TStore> {
    * @template T - The entity type to load
    * @template TDependent - The dependent object type containing the state property
    * @template TData - The HTTP response data type
-   * @param url - URL to fetch from, or an ExternalCall configuration
+   * @param url - URL to fetch from
    * @param root - Selector for the collection to populate
    * @param dependentRoot - Selector for the object containing the state property
    * @param stateProperty - Boolean property name tracking the load state
@@ -1130,7 +1054,7 @@ export class NgStore<TStore> {
    * ```
    */
   public loadEntities<T extends BaseEntity<T['id']>, TDependent extends { [K in keyof OnlyBoolean<TDependent>]?: boolean }, TData extends BaseEntity<TData['id']> = T>(
-    url: string | ExternalCall<(T | TData)[]>,
+    url: string,
     root: (s: TStore) => Entities<T>,
     dependentRoot: (s: TStore) => TDependent | null,
     stateProperty: BooleanProperties<TDependent>,
@@ -1151,7 +1075,7 @@ export class NgStore<TStore> {
           (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = null;
         });
 
-        return this._getLoadQuery<(T | TData) | (T | TData)[]>(url)
+        return this._getQuery<(T | TData) | (T | TData)[]>('GET', url)
           .pipe(
             map(data => Array.isArray(data) ? data : [data]),
             map((data: (T | TData)[]) => data as T[]),
@@ -1162,7 +1086,7 @@ export class NgStore<TStore> {
 
               return throwError(() => new Error(err));
             }),
-            finalize(() => this._removeLoadQuery(url))
+            finalize(() => this._removeQuery('GET', url))
           )
       }
 
@@ -1176,7 +1100,7 @@ export class NgStore<TStore> {
    * @template T - The entity type to load
    * @template TDependent - The dependent object type containing the state property
    * @template TData - The HTTP response data type
-   * @param url - URL to fetch from, or an ExternalCall configuration
+   * @param url - URL to fetch from
    * @param root - Selector for the collection to populate
    * @param dependentRoot - Selector for the object containing the state property
    * @param stateProperty - Boolean property name tracking the load state
@@ -1185,7 +1109,7 @@ export class NgStore<TStore> {
    * @returns Observable of the loaded entity or null
    */
   public loadEntity<T extends BaseEntity<T['id']>, TDependent extends LoadableFlags, TData extends BaseEntity<TData['id']> = T>(
-    url: string | ExternalCall<(T | TData)>,
+    url: string,
     root: (s: TStore) => Entities<T>,
     dependentRoot: (s: TStore) => TDependent,
     stateProperty: BooleanProperties<TDependent>,
@@ -1200,7 +1124,7 @@ export class NgStore<TStore> {
           (dependentRoot(d) as OnlyBoolean<TDependent>)[stateProperty] = null;
         });
 
-        return this._getLoadQuery<T | TData>(url)
+        return this._getQuery<T | TData>('GET', url)
           .pipe(
             map((data: T | TData) => data as T),
             tap((data: T) => this.upsertValue(root, data, entityLoaded)),
@@ -1210,7 +1134,7 @@ export class NgStore<TStore> {
 
               return throwError(() => new Error(err));
             }),
-            finalize(() => this._removeLoadQuery(url))
+            finalize(() => this._removeQuery('GET', url))
           )
       }
 
@@ -1224,7 +1148,7 @@ export class NgStore<TStore> {
    *
    * @template T - The entity type
    * @template TData - The HTTP response data type
-   * @param url - URL to fetch from, or an ExternalCall configuration
+   * @param url - URL to fetch from
    * @param root - Selector for the collection to populate
    * @param selector - Predicate to find the entity (if multiple match, first is used)
    * @param entityLoaded - Whether the loaded entity is considered fully loaded (default: true)
@@ -1242,7 +1166,7 @@ export class NgStore<TStore> {
    * ```
    */
   public loadEntityBy<T extends BaseEntity<T['id']>, TData extends BaseEntity<TData['id']> = T>(
-    url: string | ExternalCall<(T | TData)>,
+    url: string,
     root: (s: TStore) => Entities<T>,
     selector: (item: T) => boolean,
     entityLoaded: boolean = true,
@@ -1257,7 +1181,7 @@ export class NgStore<TStore> {
    *
    * @template T - The entity type
    * @template TData - The HTTP response data type
-   * @param url - URL to fetch from, or an ExternalCall configuration
+   * @param url - URL to fetch from
    * @param root - Selector for the collection to populate
    * @param key - Key of the entity to load
    * @param entityLoaded - Whether the loaded entity is considered fully loaded (default: true)
@@ -1272,7 +1196,7 @@ export class NgStore<TStore> {
    * ```
    */
   public loadEntityByKey<T extends BaseEntity<T['id']>, TData extends BaseEntity<TData['id']> = T>(
-    url: string | ExternalCall<(T | TData)>,
+    url: string,
     root: (s: TStore) => Entities<T>,
     key: T['id'],
     entityLoaded: boolean = true,
@@ -1652,23 +1576,31 @@ export class NgStore<TStore> {
   }
 
   /** @internal Gets or creates a shared HTTP query observable */
-  private _getLoadQuery<T>(data: string | ExternalCall<T>): Observable<T> {
-    const key = typeof data == 'string' ? data : data.key;
-    let query = this._executingQueries.get(key);
+  private _getQuery<T>(method: 'GET' | 'DELETE', url: string): Observable<T> {
+    const { map, subject } = this._executingQueries[method];
+    let query = map.get(url);
 
     if (!query) {
-      query = typeof data == 'string' ? this._http.get<T>(data).pipe(share()) : data.observable.pipe(share());
+      query = (method === 'GET' ? this._http.get<T>(url) : this._http.delete<T>(url))
+        .pipe(shareReplay({ bufferSize: 1, refCount: true }));
 
-      this._executingQueries.set(key, query);
-      this._executingQueriesSubject.next(new Set(this._executingQueries.keys()));
+      map.set(url, query);
+      subject.next(new Set(map.keys()));
     }
 
     return query;
   }
 
+  /** @internal Removes a query from the executing queries cache */
+  private _removeQuery(method: 'GET' | 'DELETE', url: string) {
+    const { map, subject } = this._executingQueries[method];
+    map.delete(url);
+    subject.next(new Set(map.keys()));
+  }
+
   /** @internal Loads a single entity by key or predicate */
   private _loadEntity<T extends BaseEntity<T['id']>, TData extends BaseEntity<TData['id']> = T>(
-    url: string | ExternalCall<(T | TData)>,
+    url: string,
     root: (s: TStore) => Entities<T>,
     selector: T['id'] | ((entity: T) => boolean),
     entityLoaded: boolean = true,
@@ -1680,7 +1612,7 @@ export class NgStore<TStore> {
       const state = entity ? entity.loaded : false;
 
       if (entity === null || state === false || force === true) {
-        return this._getLoadQuery<T | TData>(url)
+        return this._getQuery<T | TData>('GET', url)
           .pipe(
             map(data => data as T),
             tap(data => this.upsertValue(root, data, entityLoaded)),
@@ -1690,19 +1622,13 @@ export class NgStore<TStore> {
               if (hasFailed && entity?.value?.id) {
                 this._update(d => this._setEntityStates(d, root, entity.value.id, false));
               }
-              this._removeLoadQuery(url);
+              this._removeQuery('GET', url);
             })
           );
       }
 
       return of(entity?.value || null);
     });
-  }
-
-  /** @internal Removes a query from the executing queries cache */
-  private _removeLoadQuery(data: string | ExternalCall<unknown>) {
-    this._executingQueries.delete(typeof data == 'string' ? data : data.key);
-    this._executingQueriesSubject.next(new Set(this._executingQueries.keys()));
   }
 
   /** @internal Sets entity loaded states */
