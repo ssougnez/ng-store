@@ -17,7 +17,7 @@ concurrency:
 
 permissions:
   contents: read
-  id-token: write # requis pour le Trusted Publishing npm (OIDC) + provenance auto
+  id-token: write # requis pour la provenance npm
 
 jobs:
   publish:
@@ -25,20 +25,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Pas de registry-url ici : il écrirait un .npmrc avec un _authToken vide qui
-      # empêche npm de basculer sur l'OIDC (Trusted Publishing). Le registre par
-      # défaut est déjà https://registry.npmjs.org.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      # Le Trusted Publishing (OIDC) exige npm >= 11.5.1 ; on force la dernière version.
-      - name: Use latest npm
-        run: |
-          npm install -g npm@latest
-          echo "npm: $(npm --version)"
-          echo "node: $(node --version)"
-          echo "which npm: $(which npm)"
+          registry-url: 'https://registry.npmjs.org' # génère le .npmrc d'authentification
 
       - name: Install dependencies
         run: npm ci
@@ -89,12 +79,9 @@ jobs:
           cd dist/ng-store
           npm version "${{ steps.meta.outputs.version }}" --no-git-tag-version --allow-same-version
 
-      # Publication via Trusted Publishing (OIDC) : aucun token requis.
-      # NB: en pratique npm ne déclenche l'échange OIDC que si --provenance est
-      # passé explicitement (sinon -> ENEEDAUTH), même si la doc dit l'inverse.
       - name: Publish to npm
         run: |
-          echo "npm at publish: $(npm --version)"
-          echo "OIDC request url present: ${ACTIONS_ID_TOKEN_REQUEST_URL:+yes}"
           cd dist/ng-store
           npm publish --provenance --access public --tag "${{ steps.meta.outputs.dist_tag }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
