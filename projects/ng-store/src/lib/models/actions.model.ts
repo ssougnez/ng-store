@@ -139,11 +139,13 @@ export class ExecuteAction<TQueryData = void, TResult = unknown> {
   private readonly _destroyRef = inject(DestroyRef);
   private readonly _error: ((data: Error) => void) | null;
   private readonly _processing: WritableSignal<boolean> = signal(false);
+  private readonly _processingData: WritableSignal<TQueryData | undefined> = signal(undefined);
   private readonly _query: (data: TQueryData) => Observable<TResult>;
   private readonly _success: ((data: TResult) => void) | null;
 
   /** Signal indicating whether the action is currently executing */
   public readonly processing: Signal<boolean> = this._processing.asReadonly();
+  public readonly processingData: Signal<TQueryData | undefined> = this._processingData.asReadonly();
 
   /**
    * Creates a new ExecuteAction.
@@ -173,11 +175,15 @@ export class ExecuteAction<TQueryData = void, TResult = unknown> {
     }
 
     this._processing.set(true);
+    this._processingData.set(data);
 
     this._query(data)
       .pipe(
         takeUntilDestroyed(this._destroyRef),
-        finalize(() => this._processing.set(false))
+        finalize(() => {
+          this._processing.set(false);
+          this._processingData.set(undefined);
+        })
       )
       .subscribe({
         next: data => this._success && this._success(data),
