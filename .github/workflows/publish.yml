@@ -34,7 +34,11 @@ jobs:
 
       # Le Trusted Publishing (OIDC) exige npm >= 11.5.1 ; on force la dernière version.
       - name: Use latest npm
-        run: npm install -g npm@latest
+        run: |
+          npm install -g npm@latest
+          echo "npm: $(npm --version)"
+          echo "node: $(node --version)"
+          echo "which npm: $(which npm)"
 
       - name: Install dependencies
         run: npm ci
@@ -89,5 +93,8 @@ jobs:
       # La provenance est générée automatiquement (pas besoin de --provenance).
       - name: Publish to npm
         run: |
+          echo "npm at publish: $(npm --version)"
+          echo "OIDC request url present: ${ACTIONS_ID_TOKEN_REQUEST_URL:+yes}"
+          echo "OIDC request token present: ${ACTIONS_ID_TOKEN_REQUEST_TOKEN:+yes}"
           cd dist/ng-store
           npm publish --access public --tag "${{ steps.meta.outputs.dist_tag }}"
