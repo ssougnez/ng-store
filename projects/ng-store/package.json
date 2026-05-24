@@ -2,6 +2,25 @@
   "name": "@areaprog/ng-store",
   "version": "0.0.0",
   "displayName": "@areaprog/ng-store",
+  "description": "Reactive state management for Angular powered by Immer.",
+  "license": "MIT",
+  "author": "Sébastien Sougnez",
+  "homepage": "https://github.com/ssougnez/ng-store",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ssougnez/ng-store.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ssougnez/ng-store/issues"
+  },
+  "keywords": [
+    "angular",
+    "store",
+    "state-management",
+    "immer",
+    "signals",
+    "rxjs"
+  ],
   "peerDependencies": {
     "@angular/common": ">= 21.0.0",
     "@angular/core": ">= 21.0.0",

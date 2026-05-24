@@ -1,0 +1,81 @@
+name: Publish to npm
+
+# Branche au format X.Y.Z (ex: 2.0.0)  -> publie une préversion X.Y.Z-beta.N (dist-tag "beta")
+# Tag git au format vX.Y.Z (ex: v2.0.0) -> publie la version stable X.Y.Z (dist-tag "latest")
+# Note: les filtres GitHub sont du glob (pas du regex), d'où "[0-9]*" et non "[0-9]+".
+on:
+  push:
+    branches:
+      - '[0-9]*.[0-9]*.[0-9]*'
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+
+# Évite deux publications concurrentes sur la même ref.
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # requis pour la provenance npm
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org' # génère le .npmrc d'authentification
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve version and dist-tag
+        id: meta
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            # Release stable : on retire le préfixe "v" du tag.
+            VERSION="${GITHUB_REF_NAME#v}"
+            DIST_TAG="latest"
+          else
+            # Préversion : on incrémente la plus haute beta existante sur npm.
+            BASE="${GITHUB_REF_NAME}"
+            VERSIONS=$(npm view @areaprog/ng-store versions --json 2>/dev/null || echo '[]')
+            NEXT=$(node -e '
+              const base = process.argv[1];
+              let v = JSON.parse(process.argv[2] || "[]");
+              if (!Array.isArray(v)) v = [v];
+              const prefix = base + "-beta.";
+              let max = -1;
+              for (const ver of v) {
+                if (typeof ver === "string" && ver.startsWith(prefix)) {
+                  const rest = ver.slice(prefix.length);
+                  if (/^[0-9]+$/.test(rest)) max = Math.max(max, parseInt(rest, 10));
+                }
+              }
+              process.stdout.write(String(max + 1));
+            ' "$BASE" "$VERSIONS")
+            VERSION="${BASE}-beta.${NEXT}"
+            DIST_TAG="beta"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "dist_tag=${DIST_TAG}" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Publish::@areaprog/ng-store@${VERSION} (dist-tag: ${DIST_TAG})"
+
+      - name: Build library
+        run: npm run build:lib
+
+      - name: Set published version
+        run: |
+          cd dist/ng-store
+          npm version "${{ steps.meta.outputs.version }}" --no-git-tag-version --allow-same-version
+
+      - name: Publish to npm
+        run: |
+          cd dist/ng-store
+          npm publish --provenance --access public --tag "${{ steps.meta.outputs.dist_tag }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

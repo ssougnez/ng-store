@@ -13,7 +13,20 @@ Run `ng build ng-store` to build the project. The build artifacts will be stored
 
 ## Publishing
 
-After building your library with `ng build ng-store`, go to the dist folder `cd dist/ng-store` and run `npm publish`.
+Publishing to npm is automated via GitHub Actions (`.github/workflows/publish.yml`):
+
+- **Pre-release**: pushing commits to a version branch named `X.Y.Z` (e.g. `2.0.0`)
+  publishes `@areaprog/ng-store@X.Y.Z-beta.N` under the `beta` dist-tag. `N` is
+  auto-incremented from the highest existing beta on npm.
+  Consumers install it with `npm i @areaprog/ng-store@beta`.
+- **Stable release**: pushing a git tag named `vX.Y.Z` (e.g. `v2.0.0`) publishes
+  `@areaprog/ng-store@X.Y.Z` under the `latest` dist-tag.
+  Consumers install it with `npm i @areaprog/ng-store`.
+
+The published version is derived from the branch/tag name and injected into the
+built `dist/ng-store/package.json` at CI time, so the source `version` stays `0.0.0`.
+Publishing requires the `NPM_TOKEN` repository secret (a token with write access to
+the `@areaprog` npm scope).
 
 ## Running unit tests
 
