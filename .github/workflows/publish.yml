@@ -25,10 +25,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Pas de registry-url ici : il écrirait un .npmrc avec un _authToken vide qui
+      # empêche npm de basculer sur l'OIDC (Trusted Publishing). Le registre par
+      # défaut est déjà https://registry.npmjs.org.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: 'https://registry.npmjs.org'
 
       # Le Trusted Publishing (OIDC) exige npm >= 11.5.1 ; on force la dernière version.
       - name: Use latest npm
