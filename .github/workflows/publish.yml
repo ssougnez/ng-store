@@ -17,7 +17,7 @@ concurrency:
 
 permissions:
   contents: read
-  id-token: write # requis pour la provenance npm
+  id-token: write # requis pour le Trusted Publishing npm (OIDC) + provenance auto
 
 jobs:
   publish:
@@ -28,7 +28,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: 'https://registry.npmjs.org' # génère le .npmrc d'authentification
+          registry-url: 'https://registry.npmjs.org'
+
+      # Le Trusted Publishing (OIDC) exige npm >= 11.5.1 ; on force la dernière version.
+      - name: Use latest npm
+        run: npm install -g npm@latest
 
       - name: Install dependencies
         run: npm ci
@@ -79,9 +83,9 @@ jobs:
           cd dist/ng-store
           npm version "${{ steps.meta.outputs.version }}" --no-git-tag-version --allow-same-version
 
+      # Publication via Trusted Publishing (OIDC) : aucun token requis.
+      # La provenance est générée automatiquement (pas besoin de --provenance).
       - name: Publish to npm
         run: |
           cd dist/ng-store
-          npm publish --provenance --access public --tag "${{ steps.meta.outputs.dist_tag }}"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          npm publish --access public --tag "${{ steps.meta.outputs.dist_tag }}"
