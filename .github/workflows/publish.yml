@@ -43,11 +43,17 @@ jobs:
           else
             # Préversion : on incrémente la plus haute beta existante sur npm.
             BASE="${GITHUB_REF_NAME}"
-            VERSIONS=$(npm view @areaprog/ng-store versions --json 2>/dev/null || echo '[]')
+            # Si le package n'existe pas encore, npm view sort en erreur (et écrit
+            # un objet d'erreur JSON sur stdout) : dans ce cas on repart d'une liste vide.
+            if ! VERSIONS=$(npm view @areaprog/ng-store versions --json 2>/dev/null); then
+              VERSIONS='[]'
+            fi
             NEXT=$(node -e '
               const base = process.argv[1];
-              let v = JSON.parse(process.argv[2] || "[]");
-              if (!Array.isArray(v)) v = [v];
+              let v;
+              try { v = JSON.parse(process.argv[2] || "[]"); } catch (e) { v = []; }
+              if (typeof v === "string") v = [v]; // npm renvoie une string si une seule version
+              if (!Array.isArray(v)) v = [];      // objet d erreur ou autre -> ignore
               const prefix = base + "-beta.";
               let max = -1;
               for (const ver of v) {
