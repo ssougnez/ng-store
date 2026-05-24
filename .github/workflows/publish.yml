@@ -90,11 +90,11 @@ jobs:
           npm version "${{ steps.meta.outputs.version }}" --no-git-tag-version --allow-same-version
 
       # Publication via Trusted Publishing (OIDC) : aucun token requis.
-      # La provenance est générée automatiquement (pas besoin de --provenance).
+      # NB: en pratique npm ne déclenche l'échange OIDC que si --provenance est
+      # passé explicitement (sinon -> ENEEDAUTH), même si la doc dit l'inverse.
       - name: Publish to npm
         run: |
           echo "npm at publish: $(npm --version)"
           echo "OIDC request url present: ${ACTIONS_ID_TOKEN_REQUEST_URL:+yes}"
-          echo "OIDC request token present: ${ACTIONS_ID_TOKEN_REQUEST_TOKEN:+yes}"
           cd dist/ng-store
-          npm publish --access public --tag "${{ steps.meta.outputs.dist_tag }}"
+          npm publish --provenance --access public --tag "${{ steps.meta.outputs.dist_tag }}"
