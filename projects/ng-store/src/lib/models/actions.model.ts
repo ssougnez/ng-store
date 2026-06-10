@@ -38,7 +38,7 @@ export type QueryActionData<TQuery, TData, TConvertedData = TData> = Readonly<{
  *     data: (authorId) => this.store.loadEntities(
  *       `/api/authors/${authorId}/books`,
  *       s => s.books,
- *       s => this.store.findValueByKey(s => s.authors, authorId),
+ *       s => this.store.findNullableValueByKey(s => s.authors, authorId),
  *       'booksLoaded'
  *     )
  *   });

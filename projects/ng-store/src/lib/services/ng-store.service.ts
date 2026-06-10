@@ -285,6 +285,36 @@ export class NgStore<TStore> {
    * @param store - Optional store snapshot to search in (defaults to current state)
    * @returns The first matching value or null if not found
    *
+   * @remarks
+   * Use `findValueBy` instead if the value is expected to be in the store.
+   *
+   * @example
+   * ```typescript
+   * const book = store.findNullableValueBy(s => s.books, b => b.title.includes('Angular'));
+   * ```
+   */
+  public findNullableValueBy<T extends BaseEntity<T['id']>>(
+    selector: (s: TStore) => Entities<T>,
+    predicate: (item: T) => boolean,
+    store: TStore = this.value
+  ): T | null {
+    return selector(store)._array.find(e => _isUndefined(e) === false && predicate(e.value))?.value || null;
+  }
+
+  /**
+   * Finds the first value matching a predicate (synchronous).
+   * Throws if no value matches.
+   *
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param predicate - Function to test each value
+   * @param store - Optional store snapshot to search in (defaults to current state)
+   * @returns The first matching value
+   * @throws Error if no value matches the predicate
+   *
+   * @remarks
+   * Use `findNullableValueBy` instead if the value may legitimately be absent from the store.
+   *
    * @example
    * ```typescript
    * const book = store.findValueBy(s => s.books, b => b.title.includes('Angular'));
@@ -294,8 +324,14 @@ export class NgStore<TStore> {
     selector: (s: TStore) => Entities<T>,
     predicate: (item: T) => boolean,
     store: TStore = this.value
-  ): T | null {
-    return selector(store)._array.find(e => _isUndefined(e) === false && predicate(e.value))?.value || null;
+  ): T {
+    const value = this.findNullableValueBy(selector, predicate, store);
+
+    if (value === null) {
+      throw new Error('No value matching the predicate was found in the store.');
+    }
+
+    return value;
   }
 
   /**
@@ -309,13 +345,16 @@ export class NgStore<TStore> {
    * @returns The first matching value or null if not found
    * @throws Error if the specified index does not exist
    *
+   * @remarks
+   * Use `findValueByIndex` instead if the value is expected to be in the store.
+   *
    * @example
    * ```typescript
    * // Assuming 'authorId' is an indexed property
-   * const book = store.findValueByIndex(s => s.books, 'authorId', 42);
+   * const book = store.findNullableValueByIndex(s => s.books, 'authorId', 42);
    * ```
    */
-  public findValueByIndex<S extends (s: TStore) => Entities<any>, K extends Extract<keyof EntityOf<S, TStore>, string>>(
+  public findNullableValueByIndex<S extends (s: TStore) => Entities<any>, K extends Extract<keyof EntityOf<S, TStore>, string>>(
     selector: S,
     index: K,
     value: EntityOf<S, TStore>[K],
@@ -335,6 +374,42 @@ export class NgStore<TStore> {
   }
 
   /**
+   * Finds the first value by an indexed property (synchronous). O(1) lookup.
+   * Throws if no value matches.
+   *
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param index - Name of the indexed property
+   * @param value - Value to search for in the index
+   * @param store - Optional store snapshot to search in (defaults to current state)
+   * @returns The first matching value
+   * @throws Error if the specified index does not exist or no value matches
+   *
+   * @remarks
+   * Use `findNullableValueByIndex` instead if the value may legitimately be absent from the store.
+   *
+   * @example
+   * ```typescript
+   * // Assuming 'authorId' is an indexed property
+   * const book = store.findValueByIndex(s => s.books, 'authorId', 42);
+   * ```
+   */
+  public findValueByIndex<S extends (s: TStore) => Entities<any>, K extends Extract<keyof EntityOf<S, TStore>, string>>(
+    selector: S,
+    index: K,
+    value: EntityOf<S, TStore>[K],
+    store: TStore = this.value
+  ): EntityOf<S, TStore> {
+    const result = this.findNullableValueByIndex(selector, index, value, store);
+
+    if (result === null) {
+      throw new Error(`No value found for index "${index}" = "${value}" in the store.`);
+    }
+
+    return result;
+  }
+
+  /**
    * Finds a value by its key (synchronous). O(1) lookup using internal index.
    *
    * @template T - The entity type
@@ -342,6 +417,36 @@ export class NgStore<TStore> {
    * @param key - The entity key to search for
    * @param store - Optional store snapshot to search in (defaults to current state)
    * @returns The value or null if not found
+   *
+   * @remarks
+   * Use `findValueByKey` instead if the value is expected to be in the store.
+   *
+   * @example
+   * ```typescript
+   * const book = store.findNullableValueByKey(s => s.books, 123);
+   * ```
+   */
+  public findNullableValueByKey<T extends BaseEntity<T['id']>>(
+    selector: (s: TStore) => Entities<T>,
+    key: T['id'],
+    store: TStore = this.value
+  ): T | null {
+    return this._findEntityByKey(selector, key, store)?.value || null;
+  }
+
+  /**
+   * Finds a value by its key (synchronous). O(1) lookup using internal index.
+   * Throws if the key is not found.
+   *
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param key - The entity key to search for
+   * @param store - Optional store snapshot to search in (defaults to current state)
+   * @returns The value
+   * @throws Error if no value with the given key exists in the store
+   *
+   * @remarks
+   * Use `findNullableValueByKey` instead if the value may legitimately be absent from the store.
    *
    * @example
    * ```typescript
@@ -352,8 +457,14 @@ export class NgStore<TStore> {
     selector: (s: TStore) => Entities<T>,
     key: T['id'],
     store: TStore = this.value
-  ): T | null {
-    return this._findEntityByKey(selector, key, store)?.value || null;
+  ): T {
+    const value = this.findNullableValueByKey(selector, key, store);
+
+    if (value === null) {
+      throw new Error(`Value with key "${key}" was not found in the store.`);
+    }
+
+    return value;
   }
 
   /**
@@ -651,8 +762,11 @@ export class NgStore<TStore> {
    * @param value - Value to search for in the index
    * @returns Observable emitting the first matching value or null
    * @throws Error if the specified index does not exist
+   *
+   * @remarks
+   * Use `selectValueByIndex` instead if the value is expected to be in the store.
    */
-  public selectValueByIndex<S extends (s: TStore) => Entities<any>, K extends Extract<keyof EntityOf<S, TStore>, string>>(
+  public selectNullableValueByIndex<S extends (s: TStore) => Entities<any>, K extends Extract<keyof EntityOf<S, TStore>, string>>(
     selector: S,
     index: K,
     value: EntityOf<S, TStore>[K]
@@ -677,11 +791,76 @@ export class NgStore<TStore> {
   }
 
   /**
+   * Returns an observable of the first value by an indexed property. O(1) lookup.
+   * The observable errors if no value matches.
+   *
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param index - Name of the indexed property
+   * @param value - Value to search for in the index
+   * @returns Observable emitting the first matching value
+   * @throws Error if the specified index does not exist or no value matches
+   *
+   * @remarks
+   * The observable errors (and terminates) as soon as an emission has no matching value.
+   * Use this when the value is guaranteed to be present (e.g. after a `load*` call),
+   * otherwise prefer `selectNullableValueByIndex`.
+   */
+  public selectValueByIndex<S extends (s: TStore) => Entities<any>, K extends Extract<keyof EntityOf<S, TStore>, string>>(
+    selector: S,
+    index: K,
+    value: EntityOf<S, TStore>[K]
+  ): Observable<EntityOf<S, TStore>> {
+    return this.selectNullableValueByIndex(selector, index, value)
+      .pipe(
+        map(result => {
+          if (result === null) {
+            throw new Error(`No value found for index "${index}" = "${value}" in the store.`);
+          }
+
+          return result;
+        })
+      );
+  }
+
+  /**
    * Returns an observable of a single Entity's value.
    *
    * @template T - The value type
    * @param selector - Selector to locate the Entity
-   * @returns Observable emitting the value
+   * @returns Observable emitting the value (which may be null or undefined)
+   *
+   * @remarks
+   * Use `selectValue` instead if the value is expected to be set in the store.
+   *
+   * @example
+   * ```typescript
+   * store.selectNullableValue(s => s.currentUser).subscribe(user => {
+   *   console.log(user?.name);
+   * });
+   * ```
+   */
+  public selectNullableValue<T>(selector: (s: TStore) => Entity<T>): Observable<T> {
+    return this.select(selector)
+      .pipe(
+        map(e => e.value),
+        distinctUntilChanged()
+      )
+  }
+
+  /**
+   * Returns an observable of a single Entity's value.
+   * The observable errors if the value is null or undefined.
+   *
+   * @template T - The value type
+   * @param selector - Selector to locate the Entity
+   * @returns Observable emitting the non-null value
+   * @throws Error if the entity value is null or undefined
+   *
+   * @remarks
+   * The observable errors (and terminates) as soon as an emission is null or undefined.
+   * Use this when the value is guaranteed to be present (e.g. after a `load*` call),
+   * otherwise prefer `selectNullableValue`.
    *
    * @example
    * ```typescript
@@ -690,12 +869,17 @@ export class NgStore<TStore> {
    * });
    * ```
    */
-  public selectValue<T>(selector: (s: TStore) => Entity<T>): Observable<T> {
-    return this.select(selector)
+  public selectValue<T>(selector: (s: TStore) => Entity<T>): Observable<NonNullable<T>> {
+    return this.selectNullableValue(selector)
       .pipe(
-        map(e => e.value),
-        distinctUntilChanged()
-      )
+        map(value => {
+          if (value === null || value === undefined) {
+            throw new Error('The entity value is null or undefined in the store.');
+          }
+
+          return value;
+        })
+      );
   }
 
   /**
@@ -706,14 +890,17 @@ export class NgStore<TStore> {
    * @param predicate - Function to find the value
    * @returns Observable emitting the first matching value or null
    *
+   * @remarks
+   * Use `selectValueBy` instead if the value is expected to be in the store.
+   *
    * @example
    * ```typescript
-   * store.selectValueBy(s => s.books, b => b.featured).subscribe(featured => {
+   * store.selectNullableValueBy(s => s.books, b => b.featured).subscribe(featured => {
    *   // ...
    * });
    * ```
    */
-  public selectValueBy<T extends BaseEntity<T['id']>>(
+  public selectNullableValueBy<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
     predicate: (item: T) => boolean
   ): Observable<T | null> {
@@ -734,6 +921,44 @@ export class NgStore<TStore> {
   }
 
   /**
+   * Returns an observable of the first value matching a predicate.
+   * The observable errors if no value matches.
+   *
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param predicate - Function to find the value
+   * @returns Observable emitting the first matching value
+   * @throws Error if no value matches the predicate
+   *
+   * @remarks
+   * The observable errors (and terminates) as soon as an emission has no matching value.
+   * Use this when the value is guaranteed to be present (e.g. after a `load*` call),
+   * otherwise prefer `selectNullableValueBy`.
+   *
+   * @example
+   * ```typescript
+   * store.selectValueBy(s => s.books, b => b.featured).subscribe(featured => {
+   *   // ...
+   * });
+   * ```
+   */
+  public selectValueBy<T extends BaseEntity<T['id']>>(
+    selector: (s: TStore) => Entities<T>,
+    predicate: (item: T) => boolean
+  ): Observable<T> {
+    return this.selectNullableValueBy(selector, predicate)
+      .pipe(
+        map(value => {
+          if (value === null) {
+            throw new Error('No value matching the predicate was found in the store.');
+          }
+
+          return value;
+        })
+      );
+  }
+
+  /**
    * Returns an observable of a value by its key. O(1) lookup.
    *
    * @template T - The entity type
@@ -741,16 +966,19 @@ export class NgStore<TStore> {
    * @param key - The entity key to find
    * @returns Observable emitting the value or null if not found
    *
+   * @remarks
+   * Use `selectValueByKey` instead if the value is expected to be in the store.
+   *
    * @example
    * ```typescript
-   * store.selectValueByKey(s => s.books, 123).subscribe(book => {
+   * store.selectNullableValueByKey(s => s.books, 123).subscribe(book => {
    *   if (book) {
    *     console.log(book.title);
    *   }
    * });
    * ```
    */
-  public selectValueByKey<T extends BaseEntity<T['id']>>(
+  public selectNullableValueByKey<T extends BaseEntity<T['id']>>(
     selector: (s: TStore) => Entities<T>,
     key: T['id']
   ): Observable<T | null> {
@@ -763,6 +991,44 @@ export class NgStore<TStore> {
         }),
         distinctUntilChanged()
       )
+  }
+
+  /**
+   * Returns an observable of a value by its key. O(1) lookup.
+   * The observable errors if the key is not found.
+   *
+   * @template T - The entity type
+   * @param selector - Selector to locate the Entities collection
+   * @param key - The entity key to find
+   * @returns Observable emitting the value
+   * @throws Error if no value with the given key exists in the store
+   *
+   * @remarks
+   * The observable errors (and terminates) as soon as an emission has no matching value.
+   * Use this when the value is guaranteed to be present (e.g. after a `load*` call),
+   * otherwise prefer `selectNullableValueByKey`.
+   *
+   * @example
+   * ```typescript
+   * store.selectValueByKey(s => s.books, 123).subscribe(book => {
+   *   console.log(book.title);
+   * });
+   * ```
+   */
+  public selectValueByKey<T extends BaseEntity<T['id']>>(
+    selector: (s: TStore) => Entities<T>,
+    key: T['id']
+  ): Observable<T> {
+    return this.selectNullableValueByKey(selector, key)
+      .pipe(
+        map(value => {
+          if (value === null) {
+            throw new Error(`Value with key "${key}" was not found in the store.`);
+          }
+
+          return value;
+        })
+      );
   }
 
   /**

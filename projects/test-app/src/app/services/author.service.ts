@@ -36,7 +36,7 @@ export class AuthorService {
   }
 
   public findById(id: number): Author | null {
-    return this._store.findValueByKey(s => s.authors, id);
+    return this._store.findNullableValueByKey(s => s.authors, id);
   }
 
   public add(author: AuthorCreationData): Observable<Author> {
