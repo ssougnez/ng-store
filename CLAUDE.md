@@ -15,7 +15,7 @@ ng build ng-store
 # Build and package for npm publishing
 npm run package
 
-# Run tests (no tests currently exist)
+# Run tests (Vitest via @angular/build:unit-test)
 ng test ng-store
 ```
 

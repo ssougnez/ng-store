@@ -60,6 +60,12 @@ export class QueryAction<TQuery, TData, TConvertedData = TData> {
    */
   public readonly _processing: WritableSignal<boolean> = signal(false);
 
+  /**
+   * @internal - Used by library components to update the last converted result.
+   * Do not modify directly.
+   */
+  public readonly _value: WritableSignal<TConvertedData | null> = signal(null);
+
   /** Function that returns an observable of query parameters */
   public readonly query: () => Observable<TQuery>;
 
@@ -74,6 +80,17 @@ export class QueryAction<TQuery, TData, TConvertedData = TData> {
 
   /** Signal indicating whether the query is currently processing */
   public readonly processing: Signal<boolean> = this._processing.asReadonly();
+
+  /**
+   * Last converted result emitted by the action. Returns null until a result has been
+   * emitted, and resets to null whenever the action restarts (e.g. when the container
+   * re-executes it). When the `changed` callback is invoked, this signal already holds
+   * the value passed to the callback.
+   *
+   * Note: if several containers consume the same QueryAction instance, each of them
+   * writes this signal and the last write wins, exactly like `processing`.
+   */
+  public readonly value: Signal<TConvertedData | null> = this._value.asReadonly();
 
   /**
    * Creates a new QueryAction.

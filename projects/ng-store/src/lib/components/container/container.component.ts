@@ -99,6 +99,7 @@ export class NgSignalStoreContainerComponent<TQuery, TData, TConvertedData = TDa
     this.loading.set(false);
 
     action._processing.set(false);
+    action._value.set(null);
 
     const query = action.query();
 
@@ -138,6 +139,8 @@ export class NgSignalStoreContainerComponent<TQuery, TData, TConvertedData = TDa
             const converted = action.converter(rawData);
 
             this.data.set(converted);
+
+            action._value.set(converted);
 
             if (action.changed !== null) {
               action.changed(converted, isFirstTime);
